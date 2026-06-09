@@ -22,3 +22,6 @@ figures_mini/
 results/tiny_results.json
 results/minigrid.json
 .DS_Store
+
+# Colab output zip (extracted contents are committed instead)
+results_colab/*.zip
