@@ -25,3 +25,7 @@ results/minigrid.json
 
 # Colab output zip (extracted contents are committed instead)
 results_colab/*.zip
+
+# Office lock/temp files
+~$*
+.~lock.*
