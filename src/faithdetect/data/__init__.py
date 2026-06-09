@@ -5,7 +5,7 @@ from .maide_up import (
     SplitBundle,
 )
 from .collate import Collator
-from .raid import load_raid_sample
+from .raid import load_raid_sample, load_raid_from_csv
 from .attacks import (
     function_word_attack,
     synonym_attack,
@@ -20,6 +20,7 @@ __all__ = [
     "SplitBundle",
     "Collator",
     "load_raid_sample",
+    "load_raid_from_csv",
     "function_word_attack",
     "synonym_attack",
     "whitespace_attack",

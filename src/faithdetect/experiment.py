@@ -49,6 +49,11 @@ class ExperimentConfig:
     ood_cap_per_group: int = 120
     ood_max_scan: int = 60_000
     ood_cache: str = "results/cache/raid_ood.parquet"
+    # If set, OOD is built from a pre-downloaded RAID CSV via chunked reads (use this to reach
+    # the 'reviews' domain on Colab). When the OOD frame carries a 'model' column,
+    # ood_per_generator adds a cross-generator detection breakdown + figure.
+    ood_csv_path: str | None = None
+    ood_per_generator: bool = True
     # robustness
     attack_types: tuple = ("function_word", "synonym")
     attack_rate: float = 0.5
@@ -178,6 +183,32 @@ def run_baseline_cell(cfg: "ExperimentConfig", kind: str) -> dict:
     raise ValueError(kind)
 
 
+def _cross_generator(ood_df, ref_preds, variants) -> dict:
+    """Per-generator detection macro-F1 (humans vs each RAID generator), ref seed.
+
+    Predictions are in OOD-frame order (DataLoader shuffle=False), so they align with
+    ood_df['model']. For each generator g, score on (human rows + g rows)."""
+    from sklearn.metrics import f1_score
+    models = ood_df["model"].values
+    human_mask = models == "human"
+    gens = sorted(set(models) - {"human"})
+    out = {}
+    for v in variants:
+        if v not in ref_preds or "ood" not in ref_preds[v]:
+            continue
+        yt = np.array(ref_preds[v]["ood"]["y_true"])
+        yp = np.array(ref_preds[v]["ood"]["y_pred"])
+        if len(yt) != len(models):
+            continue
+        per = {}
+        for g in gens:
+            sel = human_mask | (models == g)
+            if sel.sum() >= 10 and len(set(yt[sel])) == 2:
+                per[g] = float(f1_score(yt[sel], yp[sel], average="macro"))
+        out[v] = per
+    return out
+
+
 def _subsample(train_df, n, seed):
     """Stratified-by-label subsample of the training frame (for fast smoke runs)."""
     if n >= len(train_df):
@@ -198,16 +229,24 @@ def run_full_experiment(cfg: ExperimentConfig) -> dict:
     df = load_maide_up_english(cfg.data_csv)
     splits0 = make_splits(df, mode="grouped", seed=cfg.seeds[0])
 
-    # OOD frame (shared across variants/seeds).
+    # OOD frame (shared across variants/seeds). Prefer a pre-downloaded CSV (reaches 'reviews'
+    # quickly via chunked reads); otherwise stream (cheap only for early domains).
     ood_df = None
     try:
-        ood_df = load_raid_sample(
-            domains=cfg.ood_domains, attacks=("none",),
-            cap_per_group=cfg.ood_cap_per_group, max_scan=cfg.ood_max_scan,
-            seed=cfg.seeds[0], cache_path=cfg.ood_cache,
-        )
+        if cfg.ood_csv_path:
+            from .data import load_raid_from_csv
+            ood_df = load_raid_from_csv(
+                cfg.ood_csv_path, domains=cfg.ood_domains, attacks=("none",),
+                cap_per_group=cfg.ood_cap_per_group, seed=cfg.seeds[0], cache_path=cfg.ood_cache,
+            )
+        else:
+            ood_df = load_raid_sample(
+                domains=cfg.ood_domains, attacks=("none",),
+                cap_per_group=cfg.ood_cap_per_group, max_scan=cfg.ood_max_scan,
+                seed=cfg.seeds[0], cache_path=cfg.ood_cache,
+            )
         print(f"   OOD ({cfg.ood_domains}): {len(ood_df)} rows, "
-              f"models={sorted(ood_df['model'].unique())[:6]}")
+              f"models={sorted(ood_df['model'].unique())[:8]}")
     except Exception as e:
         print(f"   [warn] OOD load skipped: {type(e).__name__}: {str(e)[:120]}")
 
@@ -283,6 +322,10 @@ def run_full_experiment(cfg: ExperimentConfig) -> dict:
             a: {"per_seed": per_seed_attacks[a], "aggregated": aggregate_seeds(per_seed_attacks[a])}
             for a in cfg.attack_types
         }
+
+    # Cross-generator breakdown (ref seed): detection macro-F1, humans vs each RAID generator.
+    if ood_df is not None and cfg.ood_per_generator and "model" in ood_df.columns:
+        results["cross_generator"] = _cross_generator(ood_df, ref_preds, list(cfg.variants))
 
     # Classic baselines (seed-0 grouped split).
     for content_only in (False, True):

@@ -104,6 +104,19 @@ def merge(cfg, cells, base, leak) -> dict:
             results["embeddings"][v] = ref["embeddings"]
         results["variants"][v] = vres
 
+    # Cross-generator breakdown from the cached OOD frame (has a 'model' column).
+    if cfg.ood_cache and os.path.exists(cfg.ood_cache):
+        try:
+            import pandas as pd
+            from faithdetect.experiment import _cross_generator
+            ood_df = pd.read_parquet(cfg.ood_cache)
+            if "model" in ood_df.columns:
+                cg = _cross_generator(ood_df, results["ref_preds"], list(cfg.variants))
+                if cg:
+                    results["cross_generator"] = cg
+        except Exception as e:
+            print(f"   [warn] cross-generator skipped: {type(e).__name__}: {str(e)[:80]}")
+
     # Leakage: grouped = baseline ref-seed indomain; random = dedicated cell.
     if "baseline" in results["variants"] and leak:
         results["leakage"] = {

@@ -193,6 +193,28 @@ def fig_ood_transfer(results, path):
     _save(fig, path)
 
 
+def fig_cross_generator(results, path):
+    """Detection F1 per RAID generator (humans vs each generator), by variant — the
+    cross-generator generalization figure (MAiDE-up is GPT-4 only; RAID spans 11 generators)."""
+    cg = results.get("cross_generator", {})
+    variants = [v for v in VARIANT_ORDER if v in cg and cg[v]]
+    if not variants:
+        return
+    gens = sorted(set().union(*[set(cg[v].keys()) for v in variants]))
+    if not gens:
+        return
+    fig, ax = plt.subplots(figsize=(max(7, 1.1 * len(gens)), 4.6))
+    x = np.arange(len(gens)); w = 0.8 / len(variants)
+    for i, v in enumerate(variants):
+        vals = [cg[v].get(g, np.nan) for g in gens]
+        ax.bar(x + (i - (len(variants) - 1) / 2) * w, vals, w, label=VARIANT_LABEL[v], color=VARIANT_COLOR[v])
+    ax.set_xticks(x); ax.set_xticklabels(gens, rotation=30, ha="right")
+    ax.set_ylim(0, 1.02); ax.set_ylabel("Detection F1 (macro)")
+    ax.set_title("Cross-generator detection (humans vs. each RAID generator)")
+    ax.legend(fontsize=8)
+    _save(fig, path)
+
+
 def fig_robustness(results, path):
     variants = _variants(results)
     if not variants:
@@ -400,6 +422,7 @@ ALL_FIGURES = [
     ("04_confusion_matrices", fig_confusion_matrices),
     ("05_roc_pr", fig_roc_pr),
     ("06_ood_transfer", fig_ood_transfer),
+    ("06b_cross_generator", fig_cross_generator),
     ("07_robustness", fig_robustness),
     ("08_fw_attribution_mass", fig_fw_attribution_mass),
     ("08b_fw_identity_sensitivity", fig_fw_identity_sensitivity),
