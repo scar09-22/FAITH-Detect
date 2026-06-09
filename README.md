@@ -2,19 +2,21 @@
 
 **F**unction-word-**A**gnostic, fa**ith**fully-explained detection of AI-generated reviews.
 
-A from-scratch, methodologically-corrected reimplementation of an AI-review detector + XAI.
-Its defining property: **function words ("the", "a", "an", …) are excluded from the explanation
-and cannot affect the model's decision** — turned into a testable scientific contribution.
+An AI-generated-review detector whose defining property is that **function words ("the", "a",
+"an", …) are excluded from the explanation and cannot affect the model's decision** — turned
+into a testable scientific contribution.
 
-> Full requirements and the prior-flaw → correction matrix are in [`SRS.md`](SRS.md).
-> Paper plan in [`paper/outline.md`](paper/outline.md).
+> Full requirements in [`SRS.md`](SRS.md). Paper draft in
+> [`paper/FAITH-Detect.docx`](paper/FAITH-Detect.docx) (plan in [`paper/outline.md`](paper/outline.md)).
 
 ## Why
-The predecessor project reported ~94–95% accuracy but: explained a *different* model than it
-evaluated (XAI fed zeroed features), shipped a **hard-coded fabricated** explanation figure and
-a **fabricated** error-type pie chart, computed "perplexity" with a masked LM, truncated reviews
-to 100–200 characters, used a single seed with no confidence intervals, and never tested
-generalization. FAITH-Detect fixes all of this (see `SRS.md` §3).
+Supervised AI-text detectors reach high in-domain accuracy but lean on superficial cues that do
+not transfer, and the explanations shipped with them are usually post-hoc rationalisations of an
+unconstrained model. **Function words** — articles, prepositions, conjunctions, auxiliaries and
+pronouns, all shared by human and machine writing — are one such cue: an unconstrained detector
+still places a large share of its attribution on them. FAITH-Detect asks what is gained by making
+the detector *ignore* function words entirely, makes that reliance directly measurable, and
+produces explanations that are content-only by construction.
 
 ## Core idea
 | Variant | Decision uses function words? | Guarantee |
@@ -52,8 +54,9 @@ table via `python scripts/summarize_results.py --results results_colab/results/f
   (vs 36.5% baseline); swapping function words leaves its decision unchanged.
 - **Best attack robustness.** Under a function-word attack the baseline drops ~6.5 pts while
   Hard-Mask is *unmoved* (slightly up); it's also most robust to synonym swaps.
-- **Leakage is real.** A naive random split inflates baseline F1 to **96.7%** vs **93.2%** grouped
-  — the prior project's ~95% was this inflated number ([`02_leakage_gap.png`](results_colab/figures/02_leakage_gap.png)).
+- **Leakage is real.** A naive random split inflates baseline F1 to **96.7%** vs **93.2%** under
+  the grouped, leakage-free split — random-split evaluation overstates real detection skill
+  ([`02_leakage_gap.png`](results_colab/figures/02_leakage_gap.png)).
 
 **The honest trade-off.** On the cross-domain OOD (hotel → **movie** reviews), Hard-Mask transfers
 *worse* (47.4% vs baseline 69.5%, non-overlapping CIs). When the content vocabulary shifts, the
@@ -83,38 +86,35 @@ results/  figures/      outputs (rendered only from results JSON)
 ```
 
 ## Setup
-This project reuses the existing env at `/Users/shiva/Detection+XAI/roberta_env` (torch+MPS,
-transformers, datasets, shap, lime, spacy, sklearn, scipy, seaborn, nltk) plus `captum`,
-`statsmodels`, `umap-learn`, and the spaCy English model. To recreate elsewhere:
 ```bash
+python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 python -m spacy download en_core_web_sm
-python -c "import nltk; [nltk.download(x) for x in ['stopwords','punkt','wordnet','omw-1.4']]"
+python -c "import nltk; [nltk.download(x) for x in ['stopwords','punkt','punkt_tab','wordnet','omw-1.4']]"
 ```
+Place the MAiDE-up English data at `data/all_data.csv` (see **Datasets** for the source). The
+code defaults to that path everywhere.
 
 ## Run
 ```bash
-PY=/Users/shiva/Detection+XAI/roberta_env/bin/python
-
 # 1) correctness checks (function-word masking + hard-mask invariance)
-$PY tests/test_invariance.py
+python tests/test_invariance.py
 
 # 2) genuine local smoke run — PROCESS-ISOLATED grid (recommended on memory-limited Macs).
-#    Each (variant, seed) runs in its own short-lived subprocess on MPS, with retries, then
-#    results are merged and all figures rendered. This is robust to the 8 GB unified-memory
-#    ceiling and to a macOS Accelerate quirk that crashes attribution passes on CPU.
-$PY scripts/run_grid.py --device mps --seeds 0 1 2 --variants baseline hardmask softreg \
-    --epochs 3 --train_subsample 600 --xai_method ig
+#    Each (variant, seed) runs in its own short-lived subprocess, with retries, then results
+#    are merged and all figures rendered. On Apple Silicon, train on CPU + attribute on MPS:
+python scripts/run_grid.py --train_device cpu --xai_device mps \
+    --seeds 0 1 2 --variants baseline hardmask softreg --epochs 3 --train_subsample 600
 
 #    (single-process alternative, fine on a GPU box / Colab):
-#    $PY scripts/smoke_test.py --seeds 0 1 2 --epochs 3
+#    python scripts/smoke_test.py --seeds 0 1 2 --epochs 3
 
 # 3) (re)render figures from a results file, and print a results table
-$PY scripts/make_figures.py --results results/smoke_results.json --figdir figures
-$PY scripts/summarize_results.py --results results/smoke_results.json
+python scripts/make_figures.py --results results/smoke_results.json --figdir figures
+python scripts/summarize_results.py --results results/smoke_results.json
 
 # 4) a config-driven run (e.g. ablation)
-$PY scripts/run_experiment.py --config configs/base.yaml
+python scripts/run_experiment.py --config configs/base.yaml
 ```
 
 The **full grid** (5 seeds, more epochs, full RAID reviews/cross-generator/attacks, optional
@@ -122,8 +122,12 @@ roberta-large) runs on Colab T4 via `notebooks/colab_full_run.ipynb` — same `r
 code, just a heavier config, so the local smoke is a faithful preview.
 
 ## Datasets
-- **MAiDE-up** (Ignat, Xu & Mihalcea, Findings of NAACL 2025) — English hotel reviews, in-domain.
-- **RAID** (Dugan et al., ACL 2024, `liamdugan/raid`) — cross-domain/-generator/-attack OOD.
+- **MAiDE-up** (Ignat, Xu & Mihalcea, *Findings of NAACL 2025*) — human vs GPT-4 hotel reviews;
+  we use the English subset. Obtain the dataset CSV from the authors' release and place it at
+  `data/all_data.csv` (columns: `Review_Language`, `Upside_Review`, `Downside_Review`,
+  `Hotel Name`, `City Name`, `source`).
+- **RAID** (Dugan et al., *ACL 2024*; HuggingFace `liamdugan/raid`) — out-of-distribution:
+  cross-domain (`reviews`), cross-generator, and adversarial attacks. Loaded on demand.
 
 ## Reproducibility & integrity
 Every figure is rendered **only** from `results/*.json` (no hard-coded data). Seeds, configs and

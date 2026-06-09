@@ -1,8 +1,7 @@
-"""Interpretable linguistic features — CORRECTED, and provided as an ABLATION only.
+"""Interpretable linguistic features — provided as an optional ABLATION.
 
-The original project (a) computed "perplexity" from a *masked* LM loss (flaw F5), (b)
-truncated text to 100-200 characters (F6), (c) concatenated raw, unscaled features (F7), and
-(d) applied English tools to 10 languages (F8). This module fixes (a)-(c) for English:
+The main detector is intentionally encoder-only; this module offers a small set of clean,
+interpretable English features for a "+interpretable features" ablation:
 
 * `causal_lm_perplexity` uses a genuine **causal** LM (GPT-2): perplexity = exp(mean
   token negative-log-likelihood) over the *whole* text (token-level cap, no char truncation).
@@ -10,9 +9,7 @@ truncated text to 100-200 characters (F6), (c) concatenated raw, unscaled featur
 * `content_pos_ratios` reports POS ratios for **content** classes only (NOUN/VERB/ADJ/ADV/
   PROPN/NUM) — deliberately excluding function-word POS, consistent with the project's thesis.
 
-These features are NOT part of the main encoder models (which are intentionally
-encoder-only); they exist so the paper can run a "+interpretable features" ablation and so the
-corrected perplexity is available. Features are standardised by `StandardFeatureScaler`.
+Features are standardised by `StandardFeatureScaler`.
 """
 from __future__ import annotations
 

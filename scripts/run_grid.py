@@ -136,7 +136,7 @@ def merge(cfg, cells, base, leak) -> dict:
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--name", default="grid")
-    ap.add_argument("--data_csv", default="/Users/shiva/Detection+XAI/all_data.csv")
+    ap.add_argument("--data_csv", default="data/all_data.csv")
     ap.add_argument("--encoder", default="distilroberta-base")
     ap.add_argument("--device", default="cpu")
     ap.add_argument("--variants", nargs="+", default=["baseline", "hardmask", "softreg"])

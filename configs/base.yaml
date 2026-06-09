@@ -2,7 +2,7 @@
 # Local smoke overrides these via CLI; the Colab notebook loads the "full" profile below.
 
 name: base
-data_csv: /Users/shiva/Detection+XAI/all_data.csv
+data_csv: data/all_data.csv
 encoder_name: roberta-base
 variants: [baseline, hardmask, softreg]
 fw_definition: union          # curated | stopwords | union

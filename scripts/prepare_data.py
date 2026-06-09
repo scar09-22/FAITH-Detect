@@ -10,7 +10,7 @@ from faithdetect.data import load_maide_up_english, make_splits, load_raid_sampl
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--data_csv", default="/Users/shiva/Detection+XAI/all_data.csv")
+    ap.add_argument("--data_csv", default="data/all_data.csv")
     ap.add_argument("--ood_domains", nargs="+", default=["abstracts"])
     ap.add_argument("--ood_cap_per_group", type=int, default=150)
     ap.add_argument("--ood_max_scan", type=int, default=80000)

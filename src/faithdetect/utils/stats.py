@@ -1,8 +1,8 @@
 """Statistical rigor utilities: confidence intervals, significance tests, calibration.
 
-Addresses flaw F9 (no CIs / no significance tests). Every headline number in the paper is
-reported as mean +/- SD with a 95% CI, and model-vs-model comparisons use a paired
-significance test (McNemar on the shared test set, plus a paired bootstrap on a metric).
+Every headline number is reported as mean +/- SD with a 95% CI, and model-vs-model
+comparisons use a paired significance test (McNemar on the shared test set, plus a paired
+bootstrap on a metric).
 """
 from __future__ import annotations
 

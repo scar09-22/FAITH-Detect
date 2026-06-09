@@ -1,8 +1,8 @@
 """Lightweight, reproducible result logging.
 
 Every experiment writes a single JSON file capturing config, environment, per-seed metrics
-and aggregated CIs. No result is ever hard-coded into a figure (fixes flaw F2): figures are
-rendered strictly from these files.
+and aggregated CIs. No result is ever hard-coded into a figure: figures are rendered strictly
+from these files.
 """
 from __future__ import annotations
 

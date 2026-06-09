@@ -5,7 +5,7 @@ hotel reviews. We use the English subset (2,000 reviews = 1,000 human + 1,000 AI
 100 hotels in 10 cities, exactly 20 reviews per hotel, every hotel present in both classes).
 
 Because every hotel appears in BOTH classes, a naive random split lets the model memorise
-hotel-specific content that leaks across train/test (flaw F10). We therefore default to a
+hotel-specific content that leaks across train/test. We therefore default to a
 GROUPED split by hotel; the random split is still available so the paper can quantify the
 leakage gap.
 """

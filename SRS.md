@@ -1,21 +1,19 @@
 # Software Requirements Specification (SRS)
 ## FAITH-Detect: Function-word-Agnostic, Faithfully-explained Detection of AI-Generated Reviews
 
-**Version:** 1.0  **Status:** Baseline for implementation  **Author:** (project owner)
+**Version:** 1.0  **Status:** Baseline for implementation  **Authors:** (authors)
 
 ---
 
 ## 1. Introduction
 
 ### 1.1 Purpose
-This document specifies the requirements for **FAITH-Detect**, a methodologically-corrected,
-publishable system for detecting AI-generated reviews with **explainable AI (XAI)**. It is a
-from-scratch redesign of a prior project (`Detection+XAI`) whose methodology and result
-integrity do not meet a publishable standard (see §3). The defining requirement, set by the
-project owner, is that **function words** ("the", "a", "an", …) — high-frequency tokens
-common to both human and machine text — must be **excluded from the explanation** and must
-**not influence the model's final decision**. FAITH-Detect elevates this requirement into the
-central, testable scientific contribution.
+This document specifies the requirements for **FAITH-Detect**, a publishable system for
+detecting AI-generated reviews with **explainable AI (XAI)**. Its defining requirement is that
+**function words** ("the", "a", "an", …) — high-frequency tokens common to both human and
+machine text — must be **excluded from the explanation** and must **not influence the model's
+final decision**. FAITH-Detect elevates this requirement into the central, testable scientific
+contribution.
 
 ### 1.2 Scope
 * **Task:** binary classification of a review as **human-written (0)** or **AI-generated (1)**.
@@ -40,13 +38,13 @@ central, testable scientific contribution.
 
 ### 1.4 Contributions / Novelty
 1. **Function-word-invariant detection** with a *constructive guarantee* (Hard-Mask) and a
-   *learned alternative* (SoftReg), directly realising the owner's requirement.
-2. **Faithful, content-focused XAI by construction**, replacing post-hoc explanations of a
-   surrogate model; validated with comprehensiveness/sufficiency, deletion/insertion AUC and a
-   new **function-word attribution-mass** metric.
+   *learned alternative* (SoftReg), directly realising the function-word requirement.
+2. **Faithful, content-focused XAI by construction**, computed on the actual deployed model
+   (not a surrogate); validated with comprehensiveness/sufficiency, deletion/insertion AUC and
+   a new **function-word attribution-mass** metric.
 3. A link between the function-word question and **shortcut learning / OOD generalization**:
-   evidence that ignoring function words improves **cross-domain & cross-generator** transfer
-   and **adversarial robustness**.
+   a characterisation of *when* ignoring function words helps (attack robustness, in-domain
+   parity) and *when* it costs (cross-domain transfer).
 4. A **rigorous evaluation protocol** (leakage-free grouped splits, ≥5 seeds with CIs, McNemar
    & paired-bootstrap significance, classic + zero-shot baselines, full ablations).
 
@@ -56,8 +54,8 @@ central, testable scientific contribution.
 
 ### 2.1 Product perspective
 FAITH-Detect is a research codebase (Python package `faithdetect` + scripts + Colab notebook).
-It reuses the owner's existing MAiDE-up CSV and an existing virtual environment, adding only a
-few libraries (Captum, statsmodels, spaCy model).
+It depends only on standard Python libraries (see `requirements.txt`) and the MAiDE-up CSV at
+`data/all_data.csv`.
 
 ### 2.2 Constraints & assumptions
 * **Compute:** local development on Apple-Silicon **MPS** (8.5 GB RAM, ~22 GB disk) for the
@@ -73,22 +71,25 @@ few libraries (Captum, statsmodels, spaCy model).
 
 ---
 
-## 3. Methodology-Correction Matrix (prior flaws → requirements)
+## 3. Design Rationale (pitfalls avoided)
 
-| ID | Flaw in prior `Detection+XAI` | Corrected requirement | Verified by |
-|----|-------------------------------|-----------------------|-------------|
-| **F1** | XAI fed `dummy_features = zeros`, explaining a *different* model than the one evaluated. | All attributions run the **real deployed model** with the real variant transform (`explain/attributions.py`). | Faithfulness metrics; code review |
-| **F2** | Figure 7 hard-coded fabricated highlight phrases (`gen.py`). | Every figure rendered **only** from `results/*.json`; example explanations produced by the model. | `viz/figures.py`, `make_figures.py` |
-| **F3** | "Error types" pie chart from toy keyword rules. | Real error analysis: confident-wrong mining + attribution inspection. | `experiment.py`, figures |
-| **F4** | Home-grown "LIME" (occlusion + length/position fallback). | Captum **Integrated Gradients** + genuine **leave-one-word-out occlusion** (+ optional SHAP/LIME). | `explain/attributions.py` |
-| **F5** | "Perplexity" from a masked-LM loss. | If used, perplexity uses a **causal LM**; interpretable features are an **ablation only**. | `features.py` (optional) |
-| **F6** | Reviews truncated to 100–200 *chars*. | Token-level truncation at `max_length` (no char truncation); full review used. | `data/collate.py` |
-| **F7** | Raw, unscaled features concatenated. | Encoder-based; any auxiliary features standardised. | models / features |
-| **F8** | English-only NLP tools applied to 10 languages. | **English-only** scope; English-appropriate tooling. | scope decision |
-| **F9** | Single seed, no CIs, no significance. | **≥5 seeds**, mean ± SD & 95% CI; **McNemar** + **paired bootstrap**. | `utils/stats.py` |
-| **F10** | No leakage-free / OOD evaluation. | **Grouped (by-hotel) splits**; explicit **leakage gap**; **RAID** cross-domain/-generator/-attack. | `data/maide_up.py`, `data/raid.py` |
-| **F11** | Architecture/feature-dim drift; `strict=False` loads. | **One** clean architecture across all variants. | `models.py` |
-| **F12** | No real baselines / ablations. | TF-IDF+LR, content-only LR, zero-shot; full ablation suite. | `baselines.py`, configs |
+The following principles guard against common failure modes in AI-text detection and its
+explanations; each maps to a concrete requirement and an artifact that verifies it.
+
+| ID | Pitfall in naïve detectors / XAI | Requirement | Verified by |
+|----|----------------------------------|-------------|-------------|
+| **R1** | Post-hoc XAI that explains a surrogate rather than the deployed model. | All attributions run the **real deployed model** with the real variant transform (`explain/attributions.py`). | Faithfulness metrics; code review |
+| **R2** | Hand-picked / illustrative explanation figures. | Every figure rendered **only** from `results/*.json`; example explanations produced by the model. | `viz/figures.py`, `make_figures.py` |
+| **R3** | Ad-hoc error analysis from keyword rules. | Real error analysis: confident-wrong mining + attribution inspection. | `experiment.py`, figures |
+| **R4** | Home-grown / mislabelled attribution methods. | **Integrated Gradients** + genuine **leave-one-word-out occlusion** (+ optional SHAP/LIME). | `explain/attributions.py` |
+| **R5** | "Perplexity" from a masked-LM loss. | If used, perplexity uses a **causal LM**; interpretable features are an **ablation only**. | `features.py` (optional) |
+| **R6** | Character-level truncation that discards most of a review. | Token-level truncation at `max_length` (no char truncation); full review used. | `data/collate.py` |
+| **R7** | Raw, unscaled hand features concatenated to the encoder. | Encoder-based; any auxiliary features standardised. | models / features |
+| **R8** | Language-mismatched NLP tooling. | **English-only** scope; English-appropriate tooling. | scope decision |
+| **R9** | Single seed, no CIs, no significance. | **≥5 seeds**, mean ± SD & 95% CI; **McNemar** + **paired bootstrap**. | `utils/stats.py` |
+| **R10** | No leakage-free / OOD evaluation. | **Grouped (by-hotel) splits**; explicit **leakage gap**; **RAID** cross-domain/-generator/-attack. | `data/maide_up.py`, `data/raid.py` |
+| **R11** | Architecture/feature-dim drift across scripts. | **One** clean architecture across all variants. | `models.py` |
+| **R12** | No real baselines / ablations. | TF-IDF+LR, content-only LR, zero-shot; full ablation suite. | `baselines.py`, configs |
 
 ---
 
@@ -135,11 +136,11 @@ few libraries (Captum, statsmodels, spaCy model).
 
 ## 6. External Interfaces / Datasets
 
-* **MAiDE-up** — English subset of the owner's `all_data.csv` (columns `Upside_Review`,
+* **MAiDE-up** — English subset, loaded from `data/all_data.csv` (columns `Upside_Review`,
   `Downside_Review`, `Review_Language`, `Hotel Name`, `City Name`, `source`).
 * **RAID** — `liamdugan/raid` on HuggingFace (`model`, `domain`, `attack`, `generation`).
   Streamed with caps; `abstracts` domain used locally (cheap cross-domain), `reviews`/others on
-  Colab.
+  Colab via a chunked CSV reader.
 
 ---
 
@@ -166,9 +167,10 @@ few libraries (Captum, statsmodels, spaCy model).
    a portable manual implementation, while the macOS-CPU smoke uses occlusion for faithfulness.
 3. Multi-seed CIs reported for every headline number; ≥1 significant comparison (McNemar) shown.
 4. Leakage gap (grouped vs. random) quantified.
-5. OOD and robustness results show Hard-Mask/SoftReg ≥ baseline on transfer and/or attacks.
+5. OOD and robustness results characterise where invariance helps (attack robustness) and
+   where it costs (cross-domain transfer), reported with CIs.
 6. Faithfulness metrics computed and reported with CIs.
-7. Every figure regenerable from `results/*.json`; no fabricated artifacts remain.
+7. Every figure regenerable from `results/*.json` (no hard-coded data).
 
 ---
 

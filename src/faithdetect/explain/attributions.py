@@ -1,16 +1,13 @@
 """Faithful, content-focused attributions over the REAL model.
 
-This fixes the central integrity flaws of the original project:
-  * F1: the old LIME/SHAP fed ``dummy_features = zeros`` and so explained a DIFFERENT model
-    than the one evaluated. Here every attribution runs the actual deployed model, including
-    the variant's input transform (hard masking for the ``hardmask`` variant).
-  * F4: a home-grown "LIME" is replaced by Captum Integrated Gradients and genuine
-    leave-one-word-out occlusion.
+Every attribution runs the actual deployed model — including the variant's input transform
+(hard masking for the ``hardmask`` variant) — never a surrogate. Two methods are provided:
+Integrated Gradients on the embedding layer and genuine leave-one-word-out occlusion.
 
-Display contract (user requirement): function words are EXCLUDED from the returned
-explanation. For the ``hardmask`` variant the decision is additionally invariant to
-function-word identity by construction, and we measure the residual attribution mass on
-function-word positions (see faithfulness.function_word_attribution_mass).
+Display contract: function words are EXCLUDED from the returned explanation. For the
+``hardmask`` variant the decision is additionally invariant to function-word identity by
+construction, and we measure the residual attribution mass on function-word positions
+(see faithfulness.function_word_attribution_mass).
 """
 from __future__ import annotations
 

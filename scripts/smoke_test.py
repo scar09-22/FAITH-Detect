@@ -16,7 +16,7 @@ from faithdetect.viz import make_all_figures
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--data_csv", default="/Users/shiva/Detection+XAI/all_data.csv")
+    ap.add_argument("--data_csv", default="data/all_data.csv")
     ap.add_argument("--encoder", default="roberta-base",
                     help="encoder (use distilroberta-base for a fast, light local smoke)")
     ap.add_argument("--seeds", type=int, nargs="+", default=[0, 1, 2])

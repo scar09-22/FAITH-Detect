@@ -1,7 +1,7 @@
 """Publication-quality figures, rendered STRICTLY from a results dict.
 
-No figure contains hard-coded data (fixes flaw F2): every number comes from
-`results/*.json` produced by `experiment.run_full_experiment`. Each function is defensive
+No figure contains hard-coded data: every number comes from `results/*.json` produced by
+`experiment.run_full_experiment`. Each function is defensive
 and skips gracefully if its inputs are absent (so partial smoke results still render).
 """
 from __future__ import annotations

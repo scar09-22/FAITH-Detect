@@ -1,8 +1,7 @@
 """Deterministic seeding and device selection.
 
-Addresses flaw F9 (no multiple seeds / no reproducibility) by giving every experiment a
-single entry point for full reproducibility across python / numpy / torch, including the
-DataLoader worker streams.
+Gives every experiment a single entry point for full reproducibility across python / numpy /
+torch, including the DataLoader worker streams.
 """
 from __future__ import annotations
 

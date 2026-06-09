@@ -1,6 +1,6 @@
 """Function-word identification and masking — the core of FAITH-Detect's novelty.
 
-The user requirement: function words ("the", "a", "an", ...) — high-frequency tokens common
+Design requirement: function words ("the", "a", "an", ...) — high-frequency tokens common
 to BOTH human and AI text — must be (1) excluded from the XAI explanation and (2) unable to
 affect the model's final decision.
 
@@ -8,7 +8,7 @@ This module provides:
   * Construction of an English function-word (closed-class) set from several standard
     sources (NLTK / scikit-learn / spaCy stopword lists + a curated closed-class list,
     and optionally a part-of-speech definition). The chosen set is a documented
-    methodological artifact (see SRS section 3).
+    methodological artifact (see SRS.md).
   * Robust mapping from RoBERTa byte-level BPE subword tokens back to surface words, so we
     can mark exactly which subword tokens belong to function words.
   * `apply_hard_mask`, which replaces every function-word subword token id with a single

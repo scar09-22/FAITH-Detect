@@ -354,8 +354,8 @@ def build(r, figdir, out):
         para(doc,
             "Faithfulness is comparable across variants and mixed in direction; Hard-Mask is strongest "
             "on sufficiency and insertion. The headline explanation result is qualitative and "
-            "structural: explanations are content-only by construction (Figure 8), replacing the "
-            "fabricated illustrations of prior work.")
+            "structural: explanations are content-only by construction (Figure 8), computed on the "
+            "deployed model rather than a surrogate.")
     add_figure(doc, os.path.join(figdir, "14_example_explanation.png"),
                "Figure 8: Real, content-focused explanations; function words are greyed out.", 6.0)
 
@@ -365,7 +365,7 @@ def build(r, figdir, out):
         "Our results give a nuanced answer to the motivating question. Making a detector ignore "
         "function words is free in-distribution, yields a provable invariance and the best "
         "robustness to text attacks, and produces explanations that are content-only by construction "
-        "— a direct remedy to post-hoc, surrogate-based, or fabricated explanations. The cost is "
+        "— in contrast to post-hoc, surrogate-based explanations. The cost is "
         "cross-domain transfer: when the content vocabulary changes, function-word and stylistic "
         "regularities that the constrained model discards turn out to carry domain-general signal. "
         "Practically, hard masking is attractive where robustness, auditability and a guarantee "

@@ -11,8 +11,8 @@ All three variants share ONE architecture (a transformer encoder + linear head o
                    tokens). A "right-for-the-right-reasons" input-gradient penalty that
                    discourages, but does not forbid, reliance on function words.
 
-A single clean architecture also fixes flaw F11 (architecture/feature-dim drift across the
-old scripts). The ``[FUNC]`` token is added for every variant (unused by baseline/softreg)
+A single clean architecture keeps the three variants directly comparable. The ``[FUNC]``
+token is added for every variant (unused by baseline/softreg)
 so all checkpoints share one vocabulary.
 """
 from __future__ import annotations

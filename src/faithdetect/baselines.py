@@ -1,4 +1,4 @@
-"""Classic, cheap baselines so the transformer's gains are contextualised (fixes flaw F12).
+"""Classic, cheap baselines so the transformer's gains are contextualised.
 
 * tfidf_lr           : TF-IDF (1-2 grams) + Logistic Regression on the full text.
 * tfidf_lr (content) : same but with function words removed from the vocabulary -> a

@@ -34,7 +34,7 @@ from .utils.logging import env_info
 @dataclass
 class ExperimentConfig:
     name: str = "smoke"
-    data_csv: str = "/Users/shiva/Detection+XAI/all_data.csv"
+    data_csv: str = "data/all_data.csv"
     encoder_name: str = "roberta-base"
     variants: tuple = ("baseline", "hardmask", "softreg")
     seeds: tuple = (0, 1, 2)
@@ -456,7 +456,7 @@ def _collect_examples(explainer, test_df, variant, n, method="ig"):
 
 
 def _train_eval_random_baseline(df, cfg, tokenizer, func_id, fw_set, device):
-    """Train a baseline on a RANDOM (leaky) split to contrast with the grouped split (F10)."""
+    """Train a baseline on a RANDOM (leaky) split to contrast with the grouped split."""
     mcfg = ModelConfig(encoder_name=cfg.encoder_name, variant="baseline", max_length=cfg.max_length)
     tcfg = TrainConfig(epochs=cfg.epochs, batch_size=cfg.batch_size, lr=cfg.lr)
     set_seed(cfg.seeds[0])
