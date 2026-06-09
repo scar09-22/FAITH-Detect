@@ -1,0 +1,31 @@
+# Full experimental grid for Colab T4 (CUDA). Heavier OOD + more seeds + larger XAI sample.
+# Reaching RAID's 'reviews' domain by streaming is slow (the CSV is domain-sorted); set
+# ood_max_scan high or pre-download the CSV (see the notebook).
+
+name: full
+data_csv: data/all_data.csv          # upload MAiDE-up CSV to the Colab working dir
+encoder_name: roberta-base           # optionally roberta-large for an ablation
+variants: [baseline, hardmask, softreg]
+fw_definition: union
+max_length: 256
+
+seeds: [0, 1, 2, 3, 4]
+epochs: 5
+batch_size: 32
+lr: 2.0e-5
+softreg_lambda: 1.0
+
+# Cross-domain (reviews = same task; abstracts/news = harder shift) + cross-generator.
+ood_domains: [reviews, abstracts, news]
+ood_cap_per_group: 200
+ood_max_scan: 6000000                 # scan the whole train split to reach 'reviews'
+
+attack_types: [function_word, synonym, whitespace]
+attack_rate: 0.5
+
+faithfulness_n_texts: 100
+ig_steps: 50
+n_example_explanations: 8
+
+measure_leakage: true
+out_dir: results

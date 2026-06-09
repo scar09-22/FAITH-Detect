@@ -1,0 +1,22 @@
+# FAITH-Detect — pinned to the versions validated locally (Python 3.13, torch 2.9 + MPS).
+# On Colab T4 these resolve to CUDA wheels automatically.
+torch>=2.2
+transformers>=4.40
+datasets>=2.19
+scikit-learn>=1.4
+scipy>=1.11
+statsmodels>=0.14
+numpy>=1.26
+pandas>=2.0
+captum>=0.7
+shap>=0.45
+lime>=0.2
+spacy>=3.7
+nltk>=3.8
+matplotlib>=3.8
+seaborn>=0.13
+umap-learn>=0.5
+tqdm>=4.66
+pyyaml>=6.0
+# spaCy English model (install separately):
+#   python -m spacy download en_core_web_sm

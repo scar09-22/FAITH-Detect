@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+*.egg-info/
+
+# Environments / large artifacts (do NOT commit the reused roberta_env or model checkpoints)
+roberta_env/
+*.pt
+*.bin
+*.safetensors
+
+# Data caches (RAID stream cache, HF cache) + per-cell intermediate partials
+results/cache/
+results/cells/
+data/all_data.csv
+*.parquet
+
+# Keep results JSON + figures, but ignore scratch
+figures_tiny/
+figures_mini/
+results/tiny_results.json
+results/minigrid.json
+.DS_Store
