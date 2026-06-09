@@ -37,6 +37,7 @@ class ModelConfig:
     dropout: float = 0.1
     max_length: int = 256
     softreg_lambda: float = 1.0        # weight of the attribution penalty (softreg only)
+    softreg_penalty_batch: int = 8     # cap examples in the 2nd-order penalty (bounds memory)
     pooling: str = "cls"               # "cls" or "mean"
 
     def __post_init__(self):
@@ -98,31 +99,49 @@ class ReviewDetector(nn.Module):
         return self.classifier(self.dropout(pooled))
 
 
-def saliency_on_function_words(
+def softreg_penalty(
     model: ReviewDetector,
     input_ids: torch.Tensor,
     attention_mask: torch.Tensor,
     fw_mask: torch.Tensor,
     labels: torch.Tensor,
-) -> tuple[torch.Tensor, torch.Tensor]:
-    """Return (logits, penalty) for the soft-reg variant.
+    max_batch: int = 8,
+) -> torch.Tensor:
+    """Saliency-on-function-words penalty, computed on (up to) ``max_batch`` examples.
 
-    penalty = mean over batch of (saliency mass on function-word tokens / total saliency),
-    where per-token saliency = |gradient(true-class logit) . input embedding| (gradient x
-    input). ``create_graph=True`` lets the penalty be backpropagated into model weights
-    (Ross et al., 2017, "Right for the Right Reasons").
+    penalty = mean of (saliency mass on function-word tokens / total saliency), where per-token
+    saliency = |gradient(true-class logit) . input embedding| (gradient x input). ``create_graph
+    =True`` lets the penalty backprop into model weights (Ross et al., 2017, "Right for the Right
+    Reasons"). The second-order graph is the memory bottleneck, so we cap it to a small
+    sub-batch — an unbiased stochastic estimate of the regulariser that keeps memory bounded
+    (important on a single GPU at large batch/seq).
     """
+    k = min(int(max_batch), input_ids.shape[0])
+    ii, am, fm, lb = input_ids[:k], attention_mask[:k], fw_mask[:k], labels[:k]
+    emb = model.word_embeddings(ii).detach().clone().requires_grad_(True)
+    logits = model(inputs_embeds=emb, attention_mask=am)
+    target = logits.gather(1, lb.view(-1, 1)).sum()
+    grads = torch.autograd.grad(target, emb, create_graph=True)[0]   # [k, L, H]
+    token_saliency = (grads * emb).sum(-1).abs()                     # [k, L]
+    real = am.float()
+    fw = fm.float() * real
+    num = (token_saliency * fw).sum(1)
+    den = (token_saliency * real).sum(1).clamp_min(1e-8)
+    return (num / den).mean()
+
+
+# Backwards-compatible alias (full-batch penalty + logits) used by some tests.
+def saliency_on_function_words(model, input_ids, attention_mask, fw_mask, labels):
     emb = model.word_embeddings(input_ids).detach().clone().requires_grad_(True)
     logits = model(inputs_embeds=emb, attention_mask=attention_mask)
     target = logits.gather(1, labels.view(-1, 1)).sum()
-    grads = torch.autograd.grad(target, emb, create_graph=True)[0]  # [B, L, H]
-    token_saliency = (grads * emb).sum(-1).abs()                    # [B, L]
+    grads = torch.autograd.grad(target, emb, create_graph=True)[0]
+    token_saliency = (grads * emb).sum(-1).abs()
     real = attention_mask.float()
     fw = fw_mask.float() * real
     num = (token_saliency * fw).sum(1)
     den = (token_saliency * real).sum(1).clamp_min(1e-8)
-    penalty = (num / den).mean()
-    return logits, penalty
+    return logits, (num / den).mean()
 
 
 def compute_loss(
@@ -130,14 +149,19 @@ def compute_loss(
     batch: dict,
     config: ModelConfig,
 ) -> tuple[torch.Tensor, torch.Tensor]:
-    """Return (loss, logits) for the configured variant."""
+    """Return (loss, logits) for the configured variant.
+
+    Cross-entropy always uses the full batch (a normal forward). For soft-reg the attribution
+    penalty is added from a small sub-batch second-order pass, so peak memory stays close to
+    ordinary fine-tuning regardless of batch size / sequence length.
+    """
     labels = batch["labels"]
+    logits = model(input_ids=batch["input_ids"], attention_mask=batch["attention_mask"])
+    loss = F.cross_entropy(logits, labels)
     if config.variant == "softreg":
-        logits, penalty = saliency_on_function_words(
-            model, batch["input_ids"], batch["attention_mask"], batch["fw_mask"], labels
+        penalty = softreg_penalty(
+            model, batch["input_ids"], batch["attention_mask"], batch["fw_mask"], labels,
+            max_batch=config.softreg_penalty_batch,
         )
-        loss = F.cross_entropy(logits, labels) + config.softreg_lambda * penalty
-    else:
-        logits = model(input_ids=batch["input_ids"], attention_mask=batch["attention_mask"])
-        loss = F.cross_entropy(logits, labels)
+        loss = loss + config.softreg_lambda * penalty
     return loss, logits
