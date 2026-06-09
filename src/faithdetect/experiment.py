@@ -8,6 +8,7 @@ of the full run.
 from __future__ import annotations
 
 import gc
+import os
 from dataclasses import dataclass, field, asdict
 
 import numpy as np
@@ -65,6 +66,9 @@ class ExperimentConfig:
     n_example_explanations: int = 6
     # leakage demonstration (train baseline on a random split too, seed 0 only)
     measure_leakage: bool = True
+    # Persist the reference-seed checkpoint per variant (for deployment / release / re-analysis).
+    save_models: bool = False
+    models_dir: str = "models"
     device: str | None = None
     out_dir: str = "results"
 
@@ -306,6 +310,12 @@ def run_full_experiment(cfg: ExperimentConfig) -> dict:
                 _compute_xai_for_variant(
                     model, mcfg, tokenizer, func_id, fw_set, splits, cfg, device, variant, results
                 )
+                if cfg.save_models:
+                    os.makedirs(cfg.models_dir, exist_ok=True)
+                    mpath = os.path.join(cfg.models_dir, f"{variant}_seed{seed}.pt")
+                    torch.save(model.state_dict(), mpath)
+                    results.setdefault("model_paths", {})[variant] = mpath
+                    print(f"   [{variant}|seed {seed}] saved checkpoint -> {mpath}", flush=True)
             del model
             gc.collect()
             if device.type == "mps":
