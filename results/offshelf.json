@@ -1,0 +1,149 @@
+{
+  "meta": {
+    "args": {
+      "detectors": [
+        "Hello-SimpleAI/chatgpt-detector-roberta",
+        "openai-community/roberta-base-openai-detector"
+      ],
+      "data_csv": "data/all_data.csv",
+      "device": "cpu",
+      "seed": 0,
+      "fw_definition": "union",
+      "attack_rate": 0.5,
+      "raid_parquet": "results/cache/raid_reviews_pool.parquet",
+      "max_raid": null,
+      "max_length": 512,
+      "batch_size": 16,
+      "cache_dir": "results/cache/offshelf",
+      "out": "results/offshelf.json"
+    },
+    "env": {
+      "python": "3.13.7",
+      "platform": "macOS-15.1-arm64-arm-64bit-Mach-O",
+      "timestamp_utc": "2026-06-11T13:11:16.437808+00:00",
+      "torch": "2.9.0",
+      "cuda": false,
+      "mps": true
+    },
+    "threshold": 0.5,
+    "note": "Off-the-shelf detectors trained on other distributions; applied zero-shot-transfer style with no fine-tuning, threshold 0.5."
+  },
+  "detectors": {
+    "Hello-SimpleAI/chatgpt-detector-roberta": {
+      "test": {
+        "n": 400,
+        "ai_class_index": 1,
+        "metrics": {
+          "accuracy": 0.6,
+          "f1_macro": 0.5494353862183549,
+          "f1_binary": 0.39849624060150374,
+          "precision": 0.803030303030303,
+          "recall": 0.265,
+          "roc_auc": 0.783675,
+          "pr_auc": 0.7603750994536728,
+          "ece": 0.3476985212225555
+        }
+      },
+      "fw_attack": {
+        "n": 400,
+        "ai_class_index": 1,
+        "metrics": {
+          "accuracy": 0.505,
+          "f1_macro": 0.35275080906148865,
+          "f1_binary": 0.038834951456310676,
+          "precision": 0.6666666666666666,
+          "recall": 0.02,
+          "roc_auc": 0.76,
+          "pr_auc": 0.714304412757979,
+          "ece": 0.48476193979826354
+        }
+      },
+      "synonym_attack": {
+        "n": 400,
+        "ai_class_index": 1,
+        "metrics": {
+          "accuracy": 0.5025,
+          "f1_macro": 0.33886494073871043,
+          "f1_binary": 0.009950248756218905,
+          "precision": 1.0,
+          "recall": 0.005,
+          "roc_auc": 0.6766000000000001,
+          "pr_auc": 0.6254438208691746,
+          "ece": 0.4966501940524904
+        }
+      },
+      "raid_reviews": {
+        "n": 3200,
+        "ai_class_index": 1,
+        "metrics": {
+          "accuracy": 0.7190625,
+          "f1_macro": 0.7006810110464397,
+          "f1_binary": 0.7748559979964939,
+          "precision": 0.9711236660389203,
+          "recall": 0.6445833333333333,
+          "roc_auc": 0.7931432291666667,
+          "pr_auc": 0.9368016125968606,
+          "ece": 0.25577461036970817
+        }
+      }
+    },
+    "openai-community/roberta-base-openai-detector": {
+      "test": {
+        "n": 400,
+        "ai_class_index": 0,
+        "metrics": {
+          "accuracy": 0.4375,
+          "f1_macro": 0.4038748137108793,
+          "f1_binary": 0.26229508196721313,
+          "precision": 0.38095238095238093,
+          "recall": 0.2,
+          "roc_auc": 0.448075,
+          "pr_auc": 0.45519272591703475,
+          "ece": 0.4440026998078974
+        }
+      },
+      "fw_attack": {
+        "n": 400,
+        "ai_class_index": 0,
+        "metrics": {
+          "accuracy": 0.345,
+          "f1_macro": 0.29349584726566713,
+          "f1_binary": 0.10273972602739725,
+          "precision": 0.16304347826086957,
+          "recall": 0.075,
+          "roc_auc": 0.258325,
+          "pr_auc": 0.36162409525706607,
+          "ece": 0.5683478502893922
+        }
+      },
+      "synonym_attack": {
+        "n": 400,
+        "ai_class_index": 0,
+        "metrics": {
+          "accuracy": 0.4725,
+          "f1_macro": 0.4663328085184412,
+          "f1_binary": 0.5237020316027088,
+          "precision": 0.4773662551440329,
+          "recall": 0.58,
+          "roc_auc": 0.444275,
+          "pr_auc": 0.4571866447081276,
+          "ece": 0.42378582795015973
+        }
+      },
+      "raid_reviews": {
+        "n": 3200,
+        "ai_class_index": 0,
+        "metrics": {
+          "accuracy": 0.7315625,
+          "f1_macro": 0.7121506300003592,
+          "f1_binary": 0.7869015132721409,
+          "precision": 0.9724095646842428,
+          "recall": 0.6608333333333334,
+          "roc_auc": 0.8713286458333334,
+          "pr_auc": 0.9589475524578044,
+          "ece": 0.24265034500934232
+        }
+      }
+    }
+  }
+}

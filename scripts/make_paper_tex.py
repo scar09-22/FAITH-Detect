@@ -89,6 +89,10 @@ def build(r, figdir, out, extras_dir="results", extras_figdir="figures"):
     mixed = _load_optional(os.path.join(extras_dir, "mixedgen_results.json"))
     fewshot = _load_optional(os.path.join(extras_dir, "fewshot_hardmask.json"))
     diag = _load_optional(os.path.join(extras_dir, "ood_diagnostic_hardmask.json"))
+    fwstats = _load_optional(os.path.join(extras_dir, "fw_stats.json"))
+    offshelf = _load_optional(os.path.join(extras_dir, "offshelf.json"))
+    replicate = _load_optional(os.path.join(extras_dir, "replicate_hc3.json"))
+    newgen = _load_optional(os.path.join(extras_dir, "new_generators.json"))
     enc = esc(r.get("meta", {}).get("config", {}).get("encoder_name", "roberta-base"))
     seeds = r.get("meta", {}).get("config", {}).get("seeds", [])
     n_seeds = len(seeds) if seeds else "?"
@@ -529,6 +533,89 @@ def build(r, figdir, out, extras_dir="results", extras_figdir="figures"):
                       r"than a structural limitation."]
             except Exception:
                 pass
+
+    # 5.4f which function words carry the signal (optional: results/fw_stats.json)
+    if fwstats:
+        agree = fwstats.get("agreement", {}).get("significant", {})
+        rate = agree.get("sign_agreement_rate")
+        words = sorted(fwstats.get("words", []), key=lambda w: -abs(w.get("z_in", 0)))[:8]
+        L += [r"\subsection{Which function words carry the signal? Word-level statistics}",
+              r"We compute the Monroe et al.\ ``Fightin' Words'' log-odds ratio with an "
+              r"informative Dirichlet prior for every function word, contrasting AI and human "
+              r"text in-domain, and repeat the statistic on the out-of-domain reviews pool to "
+              r"test the \emph{stability} of each signal."]
+        rows = [[esc(w["word"]), f"{w['z_in']:+.1f}", f"{w['z_ood']:+.1f}",
+                 "yes" if (w['z_in'] * w['z_ood'] > 0) else r"\textbf{flips}"] for w in words]
+        table(L, ["Function word", "$z$ (in-domain)", "$z$ (OOD)", "Sign stable?"], rows,
+              "Strongest function-word signals and their cross-domain stability.", "fwstats")
+        if rate is not None:
+            L += [rf"Only {100*rate:.0f}\% of significant ($|z|>2$) function-word signals keep "
+                  r"their sign across domains; the canonical article ``the'' is the strongest "
+                  r"AI-leaning signal in-domain yet reverses out-of-domain, while pronouns "
+                  r"(humans write ``I''/``we'' in every domain) form the stable family "
+                  r"(Figure~\ref{fig:17_fw_words}). This is the word-level statistical basis of "
+                  r"the shortcut claim: a large share of the function-word signal an "
+                  r"unconstrained detector absorbs is domain-local.",]
+        figure(L, "17_fw_words.png",
+               "Function-word log-odds: top signals (left) and in-domain vs.\\ OOD stability (right).", 0.98)
+
+    # 5.4g replication on a second dataset (optional: results/replicate_hc3.json)
+    if replicate:
+        rows = []
+        for v in ("baseline", "hardmask"):
+            vagg = replicate.get("variants", {}).get(v, {}).get("aggregated", {})
+            if vagg:
+                rows.append([{"baseline": "Baseline", "hardmask": "Hard-Mask"}[v],
+                             mean_ci(vagg.get("indomain", {}).get("f1_macro")),
+                             mean_ci(vagg.get("fw_attack", {}).get("f1_macro")),
+                             mean_ci(vagg.get("maide_transfer", {}).get("f1_macro"))])
+        if rows:
+            L += [r"\subsection{Replication on a second corpus (HC3)}",
+                  r"We retrain baseline and Hard-Mask from scratch on HC3 (human vs.\ ChatGPT "
+                  r"answers) and evaluate in-corpus, under the function-word attack, and "
+                  r"zero-shot transferred to MAiDE-up."]
+            table(L, ["Variant", "HC3 in-domain F1", "FW-attack F1", r"$\rightarrow$MAiDE F1"],
+                  rows, "Replication on HC3 (mean $\\pm$ 95\\% CI over seeds; \\% units).", "hc3")
+            L += [r"HC3 is near-ceiling for both variants (ChatGPT-era answers are stylistically "
+                  r"blatant), so in-domain parity replicates trivially. The informative result is "
+                  r"transfer: here Hard-Mask transfers \emph{better} than the baseline --- the "
+                  r"opposite direction from the hotel$\rightarrow$movie result --- indicating the "
+                  r"sign of the invariance--transfer effect is corpus-dependent rather than a "
+                  r"universal penalty. We report both directions and claim only the trade-off's "
+                  r"existence, not its sign.",]
+
+    # 5.4h modern open-weight generators (optional: results/new_generators.json)
+    if newgen:
+        L += [r"\subsection{Modern open-weight generators}",
+              r"We generate fresh same-domain hotel reviews with locally run open-weight LLMs "
+              r"(Llama-3.2-3B, Gemma-2-2B; prompted with real hotel names and cities) and "
+              r"evaluate the trained detectors per generator "
+              r"(Figure~\ref{fig:18_new_generators}). Closed API models (GPT-4o, Claude, "
+              r"Gemini) are out of scope locally and remain future work.",]
+        figure(L, "18_new_generators.png",
+               "Detection of freshly generated Llama-3.2 / Gemma-2 hotel reviews by variant.", 0.9)
+
+    # 5.1c off-the-shelf detectors (optional: results/offshelf.json)
+    if offshelf:
+        rows = []
+        for name, frames in offshelf.get("detectors", {}).items():
+            short = esc(name.split("/")[-1])
+            cells = [short]
+            for fr in ("test", "fw_attack", "synonym_attack", "raid_reviews"):
+                mtr = frames.get(fr, {}).get("metrics", {})
+                cells.append(pct(mtr["f1_macro"]) if "f1_macro" in mtr else "--")
+            rows.append(cells)
+        L += [r"\subsection{Off-the-shelf detectors}",
+              r"For context we evaluate two public pre-trained detectors zero-shot (no "
+              r"fine-tuning; they were trained on other distributions, so this measures "
+              r"transfer \emph{into} our setting, not their best case)."]
+        table(L, ["Detector", "MAiDE test F1", "FW-attack", "Synonym", "RAID reviews"],
+              rows, "Public pre-trained detectors applied zero-shot (\\% units).", "offshelf")
+        L += [r"Both transfer poorly into GPT-4 hotel reviews and also degrade under the "
+              r"function-word attack, extending the attack's relevance to a third detector "
+              r"family; on RAID movie reviews (closer to their training data) they recover. "
+              r"This contextualises the in-domain numbers: detector quality is "
+              r"distribution-bound, which is the premise of this paper's transfer analysis.",]
 
     # 5.5 faithfulness
     L += [r"\subsection{Explanation faithfulness}\label{sec:faith}"]

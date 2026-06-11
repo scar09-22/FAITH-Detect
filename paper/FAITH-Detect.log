@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.27 (TeX Live 2025) (preloaded format=pdflatex 2025.10.21)  11 JUN 2026 18:11
+This is pdfTeX, Version 3.141592653-2.6-1.40.27 (TeX Live 2025) (preloaded format=pdflatex 2025.10.21)  11 JUN 2026 20:15
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -462,7 +462,7 @@ File: ot1pcr.fd 2001/06/04 font definitions for OT1/pcr.
 )
 
 [2]
-<figures/01_dataset_overview.png, id=173, 440.847pt x 270.7716pt>
+<figures/01_dataset_overview.png, id=189, 440.847pt x 270.7716pt>
 File: figures/01_dataset_overview.png Graphic file (type png)
 <use figures/01_dataset_overview.png>
 Package pdftex.def Info: figures/01_dataset_overview.png  used on input line 41
@@ -471,13 +471,13 @@ Package pdftex.def Info: figures/01_dataset_overview.png  used on input line 41
 
 
 [3]
-<figures/03_indomain_performance.png, id=188, 473.8503pt x 332.9238pt>
+<figures/03_indomain_performance.png, id=204, 473.8503pt x 332.9238pt>
 File: figures/03_indomain_performance.png Graphic file (type png)
 <use figures/03_indomain_performance.png>
 Package pdftex.def Info: figures/03_indomain_performance.png  used on input lin
 e 65.
 (pdftex.def)             Requested size: 375.80544pt x 264.03815pt.
-<figures/04_confusion_matrices.png, id=189, 748.2354pt x 271.9761pt>
+<figures/04_confusion_matrices.png, id=205, 748.2354pt x 271.9761pt>
 File: figures/04_confusion_matrices.png Graphic file (type png)
 <use figures/04_confusion_matrices.png>
 Package pdftex.def Info: figures/04_confusion_matrices.png  used on input line 
@@ -486,7 +486,7 @@ Package pdftex.def Info: figures/04_confusion_matrices.png  used on input line
 
 
 [4 <./figures/01_dataset_overview.png>]
-<figures/05_roc_pr.png, id=200, 669.9429pt x 313.4109pt>
+<figures/05_roc_pr.png, id=216, 669.9429pt x 313.4109pt>
 File: figures/05_roc_pr.png Graphic file (type png)
 <use figures/05_roc_pr.png>
 Package pdftex.def Info: figures/05_roc_pr.png  used on input line 75.
@@ -495,7 +495,7 @@ Package pdftex.def Info: figures/05_roc_pr.png  used on input line 75.
 
 [5 <./figures/03_indomain_performance.png> <./figures/04_confusion_matrices.png
 >]
-<figures/08_fw_attribution_mass.png, id=212, 445.9059pt x 298.4751pt>
+<figures/08_fw_attribution_mass.png, id=228, 445.9059pt x 298.4751pt>
 File: figures/08_fw_attribution_mass.png Graphic file (type png)
 <use figures/08_fw_attribution_mass.png>
 Package pdftex.def Info: figures/08_fw_attribution_mass.png  used on input line
@@ -504,7 +504,7 @@ Package pdftex.def Info: figures/08_fw_attribution_mass.png  used on input line
 
 
 [6 <./figures/05_roc_pr.png>]
-<figures/08b_fw_identity_sensitivity.png, id=222, 458.9145pt x 298.4751pt>
+<figures/08b_fw_identity_sensitivity.png, id=238, 458.9145pt x 298.4751pt>
 File: figures/08b_fw_identity_sensitivity.png Graphic file (type png)
 <use figures/08b_fw_identity_sensitivity.png>
 Package pdftex.def Info: figures/08b_fw_identity_sensitivity.png  used on input
@@ -514,12 +514,12 @@ Package pdftex.def Info: figures/08b_fw_identity_sensitivity.png  used on input
 
 [7 <./figures/08_fw_attribution_mass.png> <./figures/08b_fw_identity_sensitivit
 y.png>]
-<figures/07_robustness.png, id=233, 593.5776pt x 298.4751pt>
+<figures/07_robustness.png, id=249, 593.5776pt x 298.4751pt>
 File: figures/07_robustness.png Graphic file (type png)
 <use figures/07_robustness.png>
 Package pdftex.def Info: figures/07_robustness.png  used on input line 140.
 (pdftex.def)             Requested size: 375.80544pt x 188.97394pt.
-<figures/06_ood_transfer.png, id=236, 481.8pt x 324.4923pt>
+<figures/06_ood_transfer.png, id=252, 481.8pt x 324.4923pt>
 File: figures/06_ood_transfer.png Graphic file (type png)
 <use figures/06_ood_transfer.png>
 Package pdftex.def Info: figures/06_ood_transfer.png  used on input line 161.
@@ -527,7 +527,7 @@ Package pdftex.def Info: figures/06_ood_transfer.png  used on input line 161.
 
 
 [8 <./figures/07_robustness.png>]
-<figures/06b_cross_generator.png, id=247, 475.2957pt x 335.8146pt>
+<figures/06b_cross_generator.png, id=263, 475.2957pt x 335.8146pt>
 File: figures/06b_cross_generator.png Graphic file (type png)
 <use figures/06b_cross_generator.png>
 Package pdftex.def Info: figures/06b_cross_generator.png  used on input line 16
@@ -536,7 +536,7 @@ Package pdftex.def Info: figures/06b_cross_generator.png  used on input line 16
 
 
 [9 <./figures/06_ood_transfer.png>]
-<figures/15_ood_diagnostic_hardmask.png, id=254, 785.0931pt x 438.1971pt>
+<figures/15_ood_diagnostic_hardmask.png, id=270, 785.0931pt x 438.1971pt>
 File: figures/15_ood_diagnostic_hardmask.png Graphic file (type png)
 <use figures/15_ood_diagnostic_hardmask.png>
 Package pdftex.def Info: figures/15_ood_diagnostic_hardmask.png  used on input 
@@ -545,7 +545,7 @@ line 173.
 
 
 [10 <./figures/06b_cross_generator.png>]
-<figures/06c_heldout_generator.png, id=263, 508.5399pt x 335.8146pt>
+<figures/06c_heldout_generator.png, id=279, 508.5399pt x 335.8146pt>
 File: figures/06c_heldout_generator.png Graphic file (type png)
 <use figures/06c_heldout_generator.png>
 Package pdftex.def Info: figures/06c_heldout_generator.png  used on input line 
@@ -554,7 +554,7 @@ Package pdftex.def Info: figures/06c_heldout_generator.png  used on input line
 
 
 [11 <./figures/15_ood_diagnostic_hardmask.png>]
-<figures/16_category_ablation.png, id=272, 526.3665pt x 339.9099pt>
+<figures/16_category_ablation.png, id=288, 526.3665pt x 339.9099pt>
 File: figures/16_category_ablation.png Graphic file (type png)
 <use figures/16_category_ablation.png>
 Package pdftex.def Info: figures/16_category_ablation.png  used on input line 2
@@ -565,85 +565,102 @@ Package pdftex.def Info: figures/16_category_ablation.png  used on input line 2
 [12 <./figures/06c_heldout_generator.png>]
 
 [13 <./figures/16_category_ablation.png>]
-<figures/09_faithfulness.png, id=290, 529.98pt x 298.4751pt>
+<figures/17_fw_words.png, id=304, 921.6834pt x 408.0846pt>
+File: figures/17_fw_words.png Graphic file (type png)
+<use figures/17_fw_words.png>
+Package pdftex.def Info: figures/17_fw_words.png  used on input line 266.
+(pdftex.def)             Requested size: 460.35791pt x 203.83008pt.
+
+
+[14 <./figures/17_fw_words.png>]
+<figures/18_new_generators.png, id=314, 669.9429pt x 353.4003pt>
+File: figures/18_new_generators.png Graphic file (type png)
+<use figures/18_new_generators.png>
+Package pdftex.def Info: figures/18_new_generators.png  used on input line 289.
+
+(pdftex.def)             Requested size: 422.77664pt x 223.01543pt.
+
+
+[15 <./figures/18_new_generators.png>]
+<figures/09_faithfulness.png, id=326, 529.98pt x 298.4751pt>
 File: figures/09_faithfulness.png Graphic file (type png)
 <use figures/09_faithfulness.png>
-Package pdftex.def Info: figures/09_faithfulness.png  used on input line 260.
+Package pdftex.def Info: figures/09_faithfulness.png  used on input line 326.
 (pdftex.def)             Requested size: 375.80544pt x 211.65009pt.
-<figures/10_deletion_insertion_curves.png, id=291, 697.6464pt x 302.3295pt>
+<figures/10_deletion_insertion_curves.png, id=327, 697.6464pt x 302.3295pt>
 File: figures/10_deletion_insertion_curves.png Graphic file (type png)
 <use figures/10_deletion_insertion_curves.png>
 Package pdftex.def Info: figures/10_deletion_insertion_curves.png  used on inpu
-t line 265.
+t line 331.
 (pdftex.def)             Requested size: 446.26582pt x 193.39333pt.
-<figures/14_example_explanation.png, id=292, 637.9032pt x 366.4089pt>
+<figures/14_example_explanation.png, id=328, 637.9032pt x 366.4089pt>
 File: figures/14_example_explanation.png Graphic file (type png)
 <use figures/14_example_explanation.png>
 Package pdftex.def Info: figures/14_example_explanation.png  used on input line
- 270.
+ 336.
 (pdftex.def)             Requested size: 446.26582pt x 256.33911pt.
 
 
-[14 <./figures/09_faithfulness.png>]
-<figures/11_calibration.png, id=305, 370.7451pt x 341.1144pt>
+[16 <./figures/09_faithfulness.png>]
+<figures/11_calibration.png, id=341, 370.7451pt x 341.1144pt>
 File: figures/11_calibration.png Graphic file (type png)
 <use figures/11_calibration.png>
-Package pdftex.def Info: figures/11_calibration.png  used on input line 277.
+Package pdftex.def Info: figures/11_calibration.png  used on input line 343.
 (pdftex.def)             Requested size: 281.85587pt x 259.3433pt.
-<figures/13_embedding_projection.png, id=306, 720.0501pt x 265.9536pt>
+<figures/13_embedding_projection.png, id=342, 720.0501pt x 265.9536pt>
 File: figures/13_embedding_projection.png Graphic file (type png)
 <use figures/13_embedding_projection.png>
 Package pdftex.def Info: figures/13_embedding_projection.png  used on input lin
-e 282.
+e 348.
 (pdftex.def)             Requested size: 446.26582pt x 164.8327pt.
 
 
-[15 <./figures/10_deletion_insertion_curves.png> <./figures/14_example_explanat
+[17 <./figures/10_deletion_insertion_curves.png> <./figures/14_example_explanat
 ion.png>]
-<figures/02_leakage_gap.png, id=318, 460.8417pt x 270.7716pt>
+<figures/02_leakage_gap.png, id=353, 460.8417pt x 270.7716pt>
 File: figures/02_leakage_gap.png Graphic file (type png)
 <use figures/02_leakage_gap.png>
-Package pdftex.def Info: figures/02_leakage_gap.png  used on input line 289.
+Package pdftex.def Info: figures/02_leakage_gap.png  used on input line 355.
 (pdftex.def)             Requested size: 281.85587pt x 165.61664pt.
 
 
-[16 <./figures/11_calibration.png> <./figures/13_embedding_projection.png>]
-Overfull \hbox (13.89896pt too wide) in paragraph at lines 299--300
+[18 <./figures/11_calibration.png> <./figures/13_embedding_projection.png>]
+Overfull \hbox (13.89896pt too wide) in paragraph at lines 365--366
 \OT1/ptm/m/n/10.95 the hard-masking guar-an-tee is as-serted by an au-to-mated 
 test. Code: []$\OT1/pcr/m/n/10.95 https : / / github . com / scar09-[]22 /
  []
 
-<figures/12_learning_curves.png, id=329, 669.9429pt x 296.7888pt>
+<figures/12_learning_curves.png, id=364, 669.9429pt x 296.7888pt>
 File: figures/12_learning_curves.png Graphic file (type png)
 <use figures/12_learning_curves.png>
-Package pdftex.def Info: figures/12_learning_curves.png  used on input line 304
+Package pdftex.def Info: figures/12_learning_curves.png  used on input line 370
 .
 (pdftex.def)             Requested size: 446.26582pt x 197.69719pt.
 
 
-[17 <./figures/02_leakage_gap.png>]
-Underfull \hbox (badness 2150) in paragraph at lines 319--320
+[19 <./figures/02_leakage_gap.png>]
+Underfull \hbox (badness 2150) in paragraph at lines 385--386
 []\OT1/ptm/m/n/10 Y. Liu, M. Ott, N. Goyal, et al. RoBERTa: A Ro-bustly Op-ti-m
 ized BERT Pre-train-ing Ap-proach.
  []
 
 
 
-[18 <./figures/12_learning_curves.png>]
+[20 <./figures/12_learning_curves.png>]
 
-[19] (./FAITH-Detect.aux)
+[21] (./FAITH-Detect.aux)
  ***********
 LaTeX2e <2024-11-01> patch level 2
 L3 programming layer <2025-01-18>
  ***********
 Package rerunfilecheck Info: File `FAITH-Detect.out' has not changed.
-(rerunfilecheck)             Checksum: D4B6B42AF69BF5C0040E5BCF7695CDFE;4188.
+(rerunfilecheck)             Checksum: 980EEDA66708F7CC94687584946D7F5B;5215.
  ) 
 Here is how much of TeX's memory you used:
- 12078 strings out of 473190
- 191902 string characters out of 5715799
- 594409 words of memory out of 5000000
- 35072 multiletter control sequences out of 15000+600000
+ 12112 strings out of 473190
+ 192662 string characters out of 5715799
+ 594906 words of memory out of 5000000
+ 35095 multiletter control sequences out of 15000+600000
  593123 words of font info for 108 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
  75i,10n,79p,1741b,589s stack positions out of 10000i,1000n,20000p,200000b,200000s
@@ -654,10 +671,10 @@ usr/local/texlive/2025/texmf-dist/fonts/type1/urw/courier/ucrr8a.pfb></usr/loca
 l/texlive/2025/texmf-dist/fonts/type1/urw/times/utmb8a.pfb></usr/local/texlive/
 2025/texmf-dist/fonts/type1/urw/times/utmr8a.pfb></usr/local/texlive/2025/texmf
 -dist/fonts/type1/urw/times/utmri8a.pfb>
-Output written on FAITH-Detect.pdf (19 pages, 2723820 bytes).
+Output written on FAITH-Detect.pdf (21 pages, 3190198 bytes).
 PDF statistics:
- 405 PDF objects out of 1000 (max. 8388607)
- 328 compressed objects within 4 object streams
- 101 named destinations out of 1000 (max. 500000)
- 288 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 443 PDF objects out of 1000 (max. 8388607)
+ 360 compressed objects within 4 object streams
+ 112 named destinations out of 1000 (max. 500000)
+ 330 words of extra memory for PDF output out of 10000 (max. 10000000)
 

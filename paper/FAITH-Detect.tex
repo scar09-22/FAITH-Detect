@@ -240,6 +240,72 @@ Labelled OOD examples $k$ & OOD F1 \\
 \end{tabular}
 \end{table}
 Moving from $k=0$ to $k=200$ changes OOD F1 from 34\% to 77\%; the size of this recovery indicates how much of the cross-domain gap is a labelled-data requirement rather than a structural limitation.
+\subsection{Which function words carry the signal? Word-level statistics}
+We compute the Monroe et al.\ ``Fightin' Words'' log-odds ratio with an informative Dirichlet prior for every function word, contrasting AI and human text in-domain, and repeat the statistic on the out-of-domain reviews pool to test the \emph{stability} of each signal.
+\begin{table}[H]\centering
+\caption{Strongest function-word signals and their cross-domain stability.}
+\label{tab:fwstats}
+\small
+\begin{tabular}{lccc}
+\toprule
+Function word & $z$ (in-domain) & $z$ (OOD) & Sign stable? \\
+\midrule
+the & +16.5 & -6.5 & \textbf{flips} \\
+we & -13.8 & -12.7 & yes \\
+i & -12.8 & -48.2 & yes \\
+no & -10.4 & -13.6 & yes \\
+you & -10.2 & -12.1 & yes \\
+that & -9.1 & +29.0 & \textbf{flips} \\
+they & -9.1 & -3.2 & yes \\
+was & +9.1 & -20.1 & \textbf{flips} \\
+\bottomrule
+\end{tabular}
+\end{table}
+Only 69\% of significant ($|z|>2$) function-word signals keep their sign across domains; the canonical article ``the'' is the strongest AI-leaning signal in-domain yet reverses out-of-domain, while pronouns (humans write ``I''/``we'' in every domain) form the stable family (Figure~\ref{fig:17_fw_words}). This is the word-level statistical basis of the shortcut claim: a large share of the function-word signal an unconstrained detector absorbs is domain-local.
+\begin{figure}[H]\centering
+\includegraphics[width=0.98\linewidth]{figures/17_fw_words.png}
+\caption{Function-word log-odds: top signals (left) and in-domain vs.\ OOD stability (right).}
+\label{fig:17_fw_words}
+\end{figure}
+\subsection{Replication on a second corpus (HC3)}
+We retrain baseline and Hard-Mask from scratch on HC3 (human vs.\ ChatGPT answers) and evaluate in-corpus, under the function-word attack, and zero-shot transferred to MAiDE-up.
+\begin{table}[H]\centering
+\caption{Replication on HC3 (mean $\pm$ 95\% CI over seeds; \% units).}
+\label{tab:hc3}
+\small
+\begin{tabular}{lccc}
+\toprule
+Variant & HC3 in-domain F1 & FW-attack F1 & $\rightarrow$MAiDE F1 \\
+\midrule
+Baseline & 100.0 $\pm$ 0.0 & 100.0 $\pm$ 0.0 & 49.3 $\pm$ 105.0 \\
+Hard-Mask & 100.0 $\pm$ 0.0 & 100.0 $\pm$ 0.0 & 63.6 $\pm$ 37.1 \\
+\bottomrule
+\end{tabular}
+\end{table}
+HC3 is near-ceiling for both variants (ChatGPT-era answers are stylistically blatant), so in-domain parity replicates trivially. The informative result is transfer: here Hard-Mask transfers \emph{better} than the baseline --- the opposite direction from the hotel$\rightarrow$movie result --- indicating the sign of the invariance--transfer effect is corpus-dependent rather than a universal penalty. We report both directions and claim only the trade-off's existence, not its sign.
+\subsection{Modern open-weight generators}
+We generate fresh same-domain hotel reviews with locally run open-weight LLMs (Llama-3.2-3B, Gemma-2-2B; prompted with real hotel names and cities) and evaluate the trained detectors per generator (Figure~\ref{fig:18_new_generators}). Closed API models (GPT-4o, Claude, Gemini) are out of scope locally and remain future work.
+\begin{figure}[H]\centering
+\includegraphics[width=0.9\linewidth]{figures/18_new_generators.png}
+\caption{Detection of freshly generated Llama-3.2 / Gemma-2 hotel reviews by variant.}
+\label{fig:18_new_generators}
+\end{figure}
+\subsection{Off-the-shelf detectors}
+For context we evaluate two public pre-trained detectors zero-shot (no fine-tuning; they were trained on other distributions, so this measures transfer \emph{into} our setting, not their best case).
+\begin{table}[H]\centering
+\caption{Public pre-trained detectors applied zero-shot (\% units).}
+\label{tab:offshelf}
+\small
+\begin{tabular}{lcccc}
+\toprule
+Detector & MAiDE test F1 & FW-attack & Synonym & RAID reviews \\
+\midrule
+chatgpt-detector-roberta & 54.9 & 35.3 & 33.9 & 70.1 \\
+roberta-base-openai-detector & 40.4 & 29.3 & 46.6 & 71.2 \\
+\bottomrule
+\end{tabular}
+\end{table}
+Both transfer poorly into GPT-4 hotel reviews and also degrade under the function-word attack, extending the attack's relevance to a third detector family; on RAID movie reviews (closer to their training data) they recover. This contextualises the in-domain numbers: detector quality is distribution-bound, which is the premise of this paper's transfer analysis.
 \subsection{Explanation faithfulness}\label{sec:faith}
 \begin{table}[H]\centering
 \caption{Explanation faithfulness (Integrated Gradients, content words).}
