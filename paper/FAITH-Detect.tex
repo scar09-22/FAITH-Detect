@@ -175,7 +175,7 @@ Attributing the hard-masked model's decisions directly exposes the mechanism: in
 \label{fig:15_ood_diagnostic_hardmask}
 \end{figure}
 \subsection{Mixed-generator training and held-out generators}\label{sec:mixedgen}
-To separate generator shift from domain shift, we add same-domain reviews from held-in generators (llama-chat, mistral, mpt-chat, cohere; plus half of the human reviews) to the training set and evaluate on a disjoint frame of held-out generators (gpt3, gpt2, mistral-chat, mpt; plus the remaining humans). Held-out-generator evaluation is then same-domain, different-generator. (Pilot scale: distilroberta-base, 2 seeds, 600-review training subsample.)
+To separate generator shift from domain shift, we add same-domain reviews from held-in generators (llama-chat, mistral, mpt-chat, cohere; plus half of the human reviews) to the training set and evaluate on a disjoint frame of held-out generators (gpt3, gpt2, mistral-chat, mpt; plus the remaining humans). Held-out-generator evaluation is then same-domain, different-generator. (Pilot scale: distilroberta-base, 5 seeds, 600-review training subsample.)
 \begin{table}[H]\centering
 \caption{Mixed-generator training: same-domain transfer to unseen generators (mean $\pm$ 95\% CI; \% units).}
 \label{tab:mixedgen}
@@ -184,20 +184,20 @@ To separate generator shift from domain shift, we add same-domain reviews from h
 \toprule
 Variant & In-domain F1 & Held-out-generator F1 (same domain) \\
 \midrule
-Baseline & 93.9 $\pm$ 1.6 & 87.5 $\pm$ 0.2 \\
-SoftReg & 92.2 $\pm$ 3.2 & 86.0 $\pm$ 7.3 \\
-Hard-Mask (FAITH) & 91.7 $\pm$ 19.1 & 81.9 $\pm$ 6.8 \\
+Baseline & 93.0 $\pm$ 2.0 & 85.5 $\pm$ 3.6 \\
+SoftReg & 92.1 $\pm$ 2.0 & 85.4 $\pm$ 2.8 \\
+Hard-Mask (FAITH) & 91.6 $\pm$ 2.2 & 81.6 $\pm$ 1.0 \\
 \bottomrule
 \end{tabular}
 \end{table}
-With generator-diverse, same-domain training data, the baseline retains a 6-point advantage on held-out generators, so part of the transfer gap is attributable to the invariance constraint itself, not only to domain shift (Figure~\ref{fig:06c_heldout_generator}).
+With generator-diverse, same-domain training data, the baseline retains a 4-point advantage on held-out generators, so part of the transfer gap is attributable to the invariance constraint itself, not only to domain shift (Figure~\ref{fig:06c_heldout_generator}).
 \begin{figure}[H]\centering
 \includegraphics[width=0.95\linewidth]{figures/06c_heldout_generator.png}
 \caption{Held-out generators after mixed-generator training (same domain).}
 \label{fig:06c_heldout_generator}
 \end{figure}
 \subsection{Which function words carry the signal? A per-category ablation}\label{sec:catablation}
-We retrain the hard-masked detector masking ONE grammatical category at a time (determiners, pronouns, prepositions, conjunctions, auxiliaries, adverbial function words), with the full union mask as reference. (Pilot scale: distilroberta-base, 2 seeds, 600-review training subsample.)
+We retrain the hard-masked detector masking ONE grammatical category at a time (determiners, pronouns, prepositions, conjunctions, auxiliaries, adverbial function words), with the full union mask as reference. (Pilot scale: distilroberta-base, 5 seeds, 600-review training subsample.)
 \begin{table}[H]\centering
 \caption{Masking one function-word category at a time (Hard-Mask variant).}
 \label{tab:catab}
@@ -206,17 +206,17 @@ We retrain the hard-masked detector masking ONE grammatical category at a time (
 \toprule
 Masked category & In-domain F1 & OOD F1 \\
 \midrule
-mask adverbial & 93.9 $\pm$ 4.7 & 52.3 $\pm$ 1.9 \\
-mask auxiliaries & 94.1 $\pm$ 7.9 & 47.6 $\pm$ 30.2 \\
-mask conjunctions & 93.5 $\pm$ 0.0 & 49.8 $\pm$ 14.0 \\
-mask determiners & 94.5 $\pm$ 0.0 & 48.2 $\pm$ 34.4 \\
-mask prepositions & 94.1 $\pm$ 4.8 & 51.6 $\pm$ 37.4 \\
-mask pronouns & 93.4 $\pm$ 4.9 & 54.0 $\pm$ 42.8 \\
-mask union & 89.7 $\pm$ 22.8 & 35.2 $\pm$ 15.7 \\
+mask adverbial & 93.0 $\pm$ 1.1 & 46.1 $\pm$ 12.6 \\
+mask auxiliaries & 92.7 $\pm$ 2.1 & 45.1 $\pm$ 7.8 \\
+mask conjunctions & 91.7 $\pm$ 2.8 & 47.2 $\pm$ 12.4 \\
+mask determiners & 93.5 $\pm$ 1.1 & 46.5 $\pm$ 6.8 \\
+mask prepositions & 93.2 $\pm$ 1.4 & 50.3 $\pm$ 4.9 \\
+mask pronouns & 93.1 $\pm$ 0.8 & 48.9 $\pm$ 7.5 \\
+mask union & 89.8 $\pm$ 3.7 & 35.3 $\pm$ 2.8 \\
 \bottomrule
 \end{tabular}
 \end{table}
-At this scale, masking \emph{auxiliaries} produces the lowest OOD transfer (48\%) and masking \emph{pronouns} the highest (54\%) (Figure~\ref{fig:16_category_ablation}). We treat this ordering as suggestive rather than conclusive given the pilot scale, and release the protocol for replication at full scale.
+At this scale, masking \emph{auxiliaries} produces the lowest OOD transfer (45\%) and masking \emph{prepositions} the highest (50\%) (Figure~\ref{fig:16_category_ablation}). We treat this ordering as suggestive rather than conclusive given the pilot scale, and release the protocol for replication at full scale.
 \begin{figure}[H]\centering
 \includegraphics[width=0.95\linewidth]{figures/16_category_ablation.png}
 \caption{Per-category masking ablation: in-domain vs.\ OOD F1.}
@@ -282,9 +282,9 @@ Hard-Mask & 100.0 $\pm$ 0.0 & 100.0 $\pm$ 0.0 & 63.6 $\pm$ 37.1 \\
 \bottomrule
 \end{tabular}
 \end{table}
-HC3 is near-ceiling for both variants (ChatGPT-era answers are stylistically blatant), so in-domain parity replicates trivially. The informative result is transfer: here Hard-Mask transfers \emph{better} than the baseline --- the opposite direction from the hotel$\rightarrow$movie result --- indicating the sign of the invariance--transfer effect is corpus-dependent rather than a universal penalty. We report both directions and claim only the trade-off's existence, not its sign.
+\paragraph{Why HC3 reaches ceiling.} Both variants reach (near-)perfect in-corpus F1, which we examined rather than celebrated. Three factors contribute. (i) HC3's ChatGPT-era answers carry blatant register markers (uniform length, hedging boilerplate, list-like structure) that its own release paper documents as highly separable. (ii) Our splits are grouped by \emph{question}: HC3 contains several answers per question, and a naive row-level split would leak question context across train/test --- we found and removed exactly this hazard (answers to one question never straddle the boundary), and the ceiling persists, so it is a property of the corpus, not leakage. (iii) The classifier is fine-tuned on in-corpus data; ceiling separability under fine-tuning is consistent with prior HC3 results. Consequently the in-corpus and attack rows certify little beyond corpus easiness; the informative result is transfer: Hard-Mask transfers \emph{better} than the baseline here --- the opposite direction from the hotel$\rightarrow$movie result --- indicating the sign of the invariance--transfer effect is corpus-dependent rather than a universal penalty. We claim only the trade-off's existence, not its sign.
 \subsection{Modern open-weight generators}
-We generate fresh same-domain hotel reviews with locally run open-weight LLMs (Llama-3.2-3B, Gemma-2-2B; prompted with real hotel names and cities) and evaluate the trained detectors per generator (Figure~\ref{fig:18_new_generators}). Closed API models (GPT-4o, Claude, Gemini) are out of scope locally and remain future work.
+We generate fresh same-domain hotel reviews with locally run open-weight LLMs (Llama-3.2-3B, Gemma-2-2B) and with Claude (Haiku/Sonnet tiers via its CLI), all prompted with real hotel names and cities, and evaluate the trained detectors per generator (Figure~\ref{fig:18_new_generators}). GPT-4o and Gemini require API access we do not have and remain future work.
 \begin{figure}[H]\centering
 \includegraphics[width=0.9\linewidth]{figures/18_new_generators.png}
 \caption{Detection of freshly generated Llama-3.2 / Gemma-2 hotel reviews by variant.}

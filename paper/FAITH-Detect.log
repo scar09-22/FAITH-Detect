@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.27 (TeX Live 2025) (preloaded format=pdflatex 2025.10.21)  11 JUN 2026 20:15
+This is pdfTeX, Version 3.141592653-2.6-1.40.27 (TeX Live 2025) (preloaded format=pdflatex 2025.10.21)  12 JUN 2026 03:02
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -573,27 +573,27 @@ Package pdftex.def Info: figures/17_fw_words.png  used on input line 266.
 
 
 [14 <./figures/17_fw_words.png>]
-<figures/18_new_generators.png, id=314, 669.9429pt x 353.4003pt>
+<figures/18_new_generators.png, id=314, 871.5762pt x 359.1819pt>
 File: figures/18_new_generators.png Graphic file (type png)
 <use figures/18_new_generators.png>
 Package pdftex.def Info: figures/18_new_generators.png  used on input line 289.
 
-(pdftex.def)             Requested size: 422.77664pt x 223.01543pt.
+(pdftex.def)             Requested size: 422.77664pt x 174.23041pt.
 
 
 [15 <./figures/18_new_generators.png>]
-<figures/09_faithfulness.png, id=326, 529.98pt x 298.4751pt>
+<figures/09_faithfulness.png, id=327, 529.98pt x 298.4751pt>
 File: figures/09_faithfulness.png Graphic file (type png)
 <use figures/09_faithfulness.png>
 Package pdftex.def Info: figures/09_faithfulness.png  used on input line 326.
 (pdftex.def)             Requested size: 375.80544pt x 211.65009pt.
-<figures/10_deletion_insertion_curves.png, id=327, 697.6464pt x 302.3295pt>
+<figures/10_deletion_insertion_curves.png, id=328, 697.6464pt x 302.3295pt>
 File: figures/10_deletion_insertion_curves.png Graphic file (type png)
 <use figures/10_deletion_insertion_curves.png>
 Package pdftex.def Info: figures/10_deletion_insertion_curves.png  used on inpu
 t line 331.
 (pdftex.def)             Requested size: 446.26582pt x 193.39333pt.
-<figures/14_example_explanation.png, id=328, 637.9032pt x 366.4089pt>
+<figures/14_example_explanation.png, id=329, 637.9032pt x 366.4089pt>
 File: figures/14_example_explanation.png Graphic file (type png)
 <use figures/14_example_explanation.png>
 Package pdftex.def Info: figures/14_example_explanation.png  used on input line
@@ -602,12 +602,12 @@ Package pdftex.def Info: figures/14_example_explanation.png  used on input line
 
 
 [16 <./figures/09_faithfulness.png>]
-<figures/11_calibration.png, id=341, 370.7451pt x 341.1144pt>
+<figures/11_calibration.png, id=342, 370.7451pt x 341.1144pt>
 File: figures/11_calibration.png Graphic file (type png)
 <use figures/11_calibration.png>
 Package pdftex.def Info: figures/11_calibration.png  used on input line 343.
 (pdftex.def)             Requested size: 281.85587pt x 259.3433pt.
-<figures/13_embedding_projection.png, id=342, 720.0501pt x 265.9536pt>
+<figures/13_embedding_projection.png, id=343, 720.0501pt x 265.9536pt>
 File: figures/13_embedding_projection.png Graphic file (type png)
 <use figures/13_embedding_projection.png>
 Package pdftex.def Info: figures/13_embedding_projection.png  used on input lin
@@ -617,7 +617,7 @@ e 348.
 
 [17 <./figures/10_deletion_insertion_curves.png> <./figures/14_example_explanat
 ion.png>]
-<figures/02_leakage_gap.png, id=353, 460.8417pt x 270.7716pt>
+<figures/02_leakage_gap.png, id=354, 460.8417pt x 270.7716pt>
 File: figures/02_leakage_gap.png Graphic file (type png)
 <use figures/02_leakage_gap.png>
 Package pdftex.def Info: figures/02_leakage_gap.png  used on input line 355.
@@ -630,7 +630,7 @@ Overfull \hbox (13.89896pt too wide) in paragraph at lines 365--366
 test. Code: []$\OT1/pcr/m/n/10.95 https : / / github . com / scar09-[]22 /
  []
 
-<figures/12_learning_curves.png, id=364, 669.9429pt x 296.7888pt>
+<figures/12_learning_curves.png, id=365, 669.9429pt x 296.7888pt>
 File: figures/12_learning_curves.png Graphic file (type png)
 <use figures/12_learning_curves.png>
 Package pdftex.def Info: figures/12_learning_curves.png  used on input line 370
@@ -657,8 +657,8 @@ Package rerunfilecheck Info: File `FAITH-Detect.out' has not changed.
 (rerunfilecheck)             Checksum: 980EEDA66708F7CC94687584946D7F5B;5215.
  ) 
 Here is how much of TeX's memory you used:
- 12112 strings out of 473190
- 192662 string characters out of 5715799
+ 12113 strings out of 473190
+ 192673 string characters out of 5715799
  594906 words of memory out of 5000000
  35095 multiletter control sequences out of 15000+600000
  593123 words of font info for 108 fonts, out of 8000000 for 9000
@@ -671,10 +671,10 @@ usr/local/texlive/2025/texmf-dist/fonts/type1/urw/courier/ucrr8a.pfb></usr/loca
 l/texlive/2025/texmf-dist/fonts/type1/urw/times/utmb8a.pfb></usr/local/texlive/
 2025/texmf-dist/fonts/type1/urw/times/utmr8a.pfb></usr/local/texlive/2025/texmf
 -dist/fonts/type1/urw/times/utmri8a.pfb>
-Output written on FAITH-Detect.pdf (21 pages, 3190198 bytes).
+Output written on FAITH-Detect.pdf (21 pages, 3218227 bytes).
 PDF statistics:
- 443 PDF objects out of 1000 (max. 8388607)
- 360 compressed objects within 4 object streams
- 112 named destinations out of 1000 (max. 500000)
+ 444 PDF objects out of 1000 (max. 8388607)
+ 361 compressed objects within 4 object streams
+ 113 named destinations out of 1000 (max. 500000)
  330 words of extra memory for PDF output out of 10000 (max. 10000000)
 
