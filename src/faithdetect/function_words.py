@@ -146,12 +146,16 @@ def build_function_word_set(definition: str = "union") -> FunctionWordSet:
                               ablation: mask ONLY that category, leave the rest intact.
     """
     if definition.startswith("cat:"):
-        key = definition.split(":", 1)[1]
-        if key not in FW_CATEGORIES:
-            raise ValueError(f"Unknown function-word category {key!r}; "
-                             f"choose from {sorted(FW_CATEGORIES)}")
-        return FunctionWordSet(name=definition, words=FW_CATEGORIES[key],
-                               sources=(f"curated_{key}",))
+        # "cat:determiners" masks one category; "cat:determiners+auxiliaries" masks a chosen
+        # subset (selective invariance: keep the categories that carry transferable signal).
+        keys = definition.split(":", 1)[1].split("+")
+        bad = [k for k in keys if k not in FW_CATEGORIES]
+        if bad:
+            raise ValueError(f"Unknown function-word categor{'y' if len(bad)==1 else 'ies'} "
+                             f"{bad}; choose from {sorted(FW_CATEGORIES)}")
+        words = frozenset().union(*[FW_CATEGORIES[k] for k in keys])
+        return FunctionWordSet(name=definition, words=words,
+                               sources=tuple(f"curated_{k}" for k in keys))
     sources: list[str] = []
     words: set[str] = set()
     if definition in ("curated", "union", "pos"):
