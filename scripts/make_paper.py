@@ -1,7 +1,7 @@
 """Generate a Word (.docx) paper draft from the real results JSON + figures.
 
-Numbers and tables are read from results/*.json (no hard-coded results); figures are embedded
-from the figures directory. Prose is a first-author draft to edit, not auto-generated filler.
+Numbers and tables are read from results/*.json (no hard-coded results); every figure in the
+figures directory is embedded and referenced. Prose is a first-author draft to edit.
 
 Usage:
   python scripts/make_paper.py --results results_colab/results/full_results.json \
@@ -14,7 +14,7 @@ import _bootstrap  # noqa: F401
 from faithdetect.utils.logging import load_json
 
 from docx import Document
-from docx.shared import Pt, Inches, RGBColor
+from docx.shared import Pt, Inches
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 
 
@@ -44,8 +44,7 @@ LABEL = {"baseline": "Baseline", "softreg": "SoftReg", "hardmask": "Hard-Mask (F
 
 # ----------------------------- doc helpers -------------------------------- #
 def h(doc, text, level):
-    p = doc.add_heading(text, level=level)
-    return p
+    doc.add_heading(text, level=level)
 
 
 def para(doc, text, italic=False, size=None):
@@ -57,37 +56,19 @@ def para(doc, text, italic=False, size=None):
     return p
 
 
-def add_table(doc, header, rows, bold_last_col=False):
+def add_table(doc, header, rows):
     t = doc.add_table(rows=1, cols=len(header))
     t.style = "Light Grid Accent 1"
     for j, htext in enumerate(header):
         c = t.rows[0].cells[j]
         c.text = ""
-        run = c.paragraphs[0].add_run(htext)
-        run.bold = True
-        run.font.size = Pt(9)
+        run = c.paragraphs[0].add_run(htext); run.bold = True; run.font.size = Pt(9)
     for row in rows:
         cells = t.add_row().cells
         for j, val in enumerate(row):
             cells[j].text = ""
-            run = cells[j].paragraphs[0].add_run(str(val))
-            run.font.size = Pt(9)
-            if bold_last_col and j == len(row) - 1:
-                run.bold = True
+            run = cells[j].paragraphs[0].add_run(str(val)); run.font.size = Pt(9)
     return t
-
-
-def add_figure(doc, path, caption, width=6.0):
-    if not os.path.exists(path):
-        para(doc, f"[figure missing: {path}]", italic=True)
-        return
-    doc.add_picture(path, width=Inches(width))
-    doc.paragraphs[-1].alignment = WD_ALIGN_PARAGRAPH.CENTER
-    cap = doc.add_paragraph()
-    cap.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    run = cap.add_run(caption)
-    run.italic = True
-    run.font.size = Pt(9)
 
 
 # --------------------------------- build ---------------------------------- #
@@ -97,77 +78,87 @@ def build(r, figdir, out):
     style.font.name = "Times New Roman"
     style.font.size = Pt(11)
 
+    fignum = [0]  # mutable counter so captions auto-number in document order
+
+    def fig(name, caption, width=5.6):
+        path = os.path.join(figdir, name)
+        fignum[0] += 1
+        if not os.path.exists(path):
+            para(doc, f"[Figure {fignum[0]} missing: {name}]", italic=True)
+            return fignum[0]
+        doc.add_picture(path, width=Inches(width))
+        doc.paragraphs[-1].alignment = WD_ALIGN_PARAGRAPH.CENTER
+        cap = doc.add_paragraph(); cap.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        run = cap.add_run(f"Figure {fignum[0]}: {caption}"); run.italic = True; run.font.size = Pt(9)
+        return fignum[0]
+
     enc = r.get("meta", {}).get("config", {}).get("encoder_name", "roberta-base")
     seeds = r.get("meta", {}).get("config", {}).get("seeds", [])
     n_seeds = len(seeds) if seeds else "?"
 
-    # Title block
-    title = doc.add_paragraph()
-    title.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    tr = title.add_run("Function Words Are a Shortcut: Faithful, Function-Word-Invariant "
-                       "Detection of AI-Generated Reviews")
-    tr.bold = True
-    tr.font.size = Pt(16)
+    # ------------------------------ Title ------------------------------- #
+    title = doc.add_paragraph(); title.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    tr = title.add_run("Should a Detector Ignore Function Words? Characterising the Trade-offs "
+                       "of Function-Word-Invariant Detection of AI-Generated Reviews")
+    tr.bold = True; tr.font.size = Pt(16)
     sub = doc.add_paragraph(); sub.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    sr = sub.add_run("Author Name¹, Co-author²\n¹Affiliation  ²Affiliation  ·  {emails}")
-    sr.font.size = Pt(11)
+    sub.add_run("Author Name¹, Co-author²\n¹Affiliation  ²Affiliation").font.size = Pt(11)
 
-    # Abstract
+    # ----------------------------- Abstract ----------------------------- #
     h(doc, "Abstract", 1)
     para(doc,
         "Supervised detectors of AI-generated text reach high in-domain accuracy but are known to "
-        "rely on superficial cues that do not transfer. We identify function words — articles, "
-        "prepositions, conjunctions, auxiliaries and pronouns that are statistically common to both "
-        "human and machine text — as one such cue, and ask what is gained by making a detector "
-        "ignore them. We propose FAITH-Detect, which enforces function-word invariance two ways: a "
-        "hard-masking variant that replaces every function-word token with a neutral placeholder "
-        "before encoding (so the decision is provably invariant to function-word identity), and a "
-        "soft attribution-regularised variant. Explanations are produced by the real model and are "
-        "content-only by construction; we quantify reliance with a function-word attribution-mass "
-        "metric and a forward-only identity-sensitivity metric. On the multilingual MAiDE-up hotel-"
-        f"review benchmark (English subset; {enc}, {n_seeds} seeds, leakage-free grouped splits) the "
-        "hard-masked detector matches the unconstrained model in-domain, places essentially zero "
-        "attribution on function words, and is the most robust to function-word and paraphrase "
-        "attacks. On a cross-domain out-of-distribution set (RAID reviews) it transfers worse, "
-        "showing that function words can also carry domain-general style signal. Function-word "
-        "invariance is therefore best understood as a principled trade-off: a provable guarantee, "
-        "in-domain parity, robustness and faithful explanations, at some cost to cross-domain "
-        "transfer. All results are reported with confidence intervals over multiple seeds and are "
-        "reproducible from a single results file.", size=10)
+        "rely on superficial cues that transfer poorly. We study one such cue — function words "
+        "(articles, prepositions, conjunctions, auxiliaries and pronouns common to both human and "
+        "machine text) — and ask what is gained by making a detector ignore them. We propose "
+        "FAITH-Detect, which enforces function-word invariance two ways: a hard-masking variant that "
+        "replaces every function-word token with a neutral placeholder before encoding (so the "
+        "decision is provably invariant to function-word identity), and a soft attribution-"
+        "regularised variant. Explanations are produced by the deployed model and are content-only "
+        "by construction; we quantify reliance with a function-word attribution-mass metric and a "
+        "forward-only identity-sensitivity metric. On the MAiDE-up hotel-review benchmark (English "
+        f"subset; {enc}, {n_seeds} seeds, leakage-free grouped splits) the hard-masked detector "
+        "matches the unconstrained model in-domain, places essentially zero attribution on function "
+        "words, is essentially unaffected by a function-word attack, and degrades least under "
+        "synonym substitution. On a cross-domain out-of-distribution set (RAID reviews) it transfers "
+        "worse than the unconstrained baseline, indicating that function words can carry domain-"
+        "general style signal. We therefore frame function-word invariance as a trade-off rather "
+        "than a universal improvement: a provable guarantee, in-domain parity, attack robustness and "
+        "faithful explanations, at a measured cost to cross-domain transfer. All results are reported "
+        "with confidence intervals over multiple seeds and regenerate from a single results file.",
+        size=10)
 
-    # 1. Introduction
+    # --------------------------- Introduction --------------------------- #
     h(doc, "1  Introduction", 1)
     para(doc,
-        "The fluency of large language models has made AI-generated reviews a practical threat to "
-        "online platforms, where fabricated opinions can manipulate purchasing and reputation. "
-        "Detectors are deployed in response, and increasingly are expected to come with explanations "
-        "that justify a flag. Two problems recur. First, supervised detectors latch onto dataset- "
-        "and generator-specific artefacts, so accuracy collapses out of distribution. Second, the "
-        "explanations that accompany detectors are usually post-hoc rationalisations of an "
-        "unconstrained model, and are rarely validated for faithfulness.")
+        "The fluency of large language models has made AI-generated reviews a practical concern for "
+        "online platforms, where fabricated opinions can distort purchasing and reputation. "
+        "Detectors are deployed in response and are increasingly expected to justify a flag with an "
+        "explanation. Two problems recur. First, supervised detectors latch onto dataset- and "
+        "generator-specific artefacts, so accuracy can collapse out of distribution [2, 14]. Second, "
+        "the explanations shipped with detectors are usually post-hoc rationalisations of an "
+        "unconstrained model and are seldom validated for faithfulness [13].")
     para(doc,
         "This paper studies a single, concrete cue: function words. Closed-class words such as "
-        "“the”, “a” and “of” are among the most frequent tokens in any "
-        "English text and are shared by human and machine writing; intuitively they should carry "
-        "little signal about whether a review is genuine. Yet an unconstrained detector still places "
-        "a large fraction of its attribution on them. We ask: what happens if the detector is made "
-        "to ignore function words entirely?")
+        "“the”, “a” and “of” are among the most frequent tokens in any English text and are shared "
+        "by human and machine writing; intuitively they should carry little signal about whether a "
+        "review is genuine. Yet an unconstrained detector still places a large fraction of its "
+        "attribution on them. We ask what happens if the detector is made to ignore function words "
+        "entirely, and whether doing so changes robustness, transfer and explanation quality.")
     para(doc,
         "We introduce FAITH-Detect, which operationalises function-word invariance in two ways. The "
         "hard-masking variant replaces every function-word sub-token with a shared placeholder before "
-        "the encoder sees the text, so the decision cannot depend on which function word occurred; "
-        "this is a constructive, testable guarantee. The soft variant keeps the text but penalises "
-        "attribution mass that lands on function words during training. Crucially, explanations are "
-        "computed on the actual deployed model, and function words are excluded by construction; we "
-        "verify this with a function-word attribution-mass metric (the share of attribution on "
-        "function words) and a forward-only identity-sensitivity metric (the change in the AI "
-        "probability when function words are swapped for other function words).")
+        "the encoder sees the text, so the decision cannot depend on which function word occurred — a "
+        "constructive, testable guarantee. The soft variant keeps the text but penalises attribution "
+        "mass that lands on function words during training [5]. Explanations are computed on the "
+        "actual deployed model, and function words are excluded by construction; we verify reliance "
+        "with a function-word attribution-mass metric and a forward-only identity-sensitivity metric.")
     para(doc, "Contributions:")
     for c in [
         "A function-word-invariant detector with a provable guarantee (hard masking) and a learned "
-        "alternative (soft regularisation), motivated by shortcut learning.",
-        "Faithful, content-only explanations computed on the real model, with two metrics that make "
-        "function-word reliance directly measurable.",
+        "alternative (soft regularisation), motivated by shortcut learning [9, 20, 21].",
+        "Faithful, content-only explanations computed on the deployed model, with two metrics that "
+        "make function-word reliance directly measurable.",
         "A rigorous evaluation — leakage-free grouped splits, multiple seeds with confidence "
         "intervals, significance tests, classic baselines, cross-domain and cross-generator OOD, and "
         "two text attacks — yielding an honest characterisation of when function-word invariance "
@@ -175,88 +166,90 @@ def build(r, figdir, out):
     ]:
         doc.add_paragraph(c, style="List Bullet")
 
-    # 2. Related work
+    # ---------------------------- Related work -------------------------- #
     h(doc, "2  Related Work", 1)
     para(doc,
-        "Machine-generated text detection spans zero-shot likelihood methods (e.g. GLTR; DetectGPT) "
-        "and supervised transformer classifiers; the RAID benchmark shows that such detectors are "
-        "brittle to domain shift, unseen generators and adversarial edits. Our work is orthogonal: "
-        "rather than proposing a stronger detector, we ask what a specific, interpretable family of "
-        "features (function words) contributes, and whether removing it improves robustness and "
+        "Machine-generated text detection spans zero-shot likelihood methods (GLTR [7]; DetectGPT "
+        "[6]) and supervised transformer classifiers [10, 16]; surveys catalogue the area [17]. "
+        "Robustness is a recurring weakness: the RAID benchmark shows detectors are brittle to domain "
+        "shift, unseen generators and adversarial edits [2], paraphrasing can evade them [15], and "
+        "some work questions whether reliable detection is achievable in general [14]. Our aim is "
+        "orthogonal — rather than proposing a stronger detector, we ask what one interpretable family "
+        "of features (function words) contributes, and whether removing it improves robustness and "
         "explanation quality. Shortcut learning frames the broader phenomenon of models exploiting "
-        "spurious correlations. On the explanation side, Integrated Gradients provides axiomatic "
-        "attributions; the ERASER suite formalises faithfulness via comprehensiveness and "
-        "sufficiency, and deletion/insertion curves measure how predictions respond to evidence. "
-        "Attribution regularisation (“right for the right reasons”) trains models to place "
-        "gradient mass where a prior says it should; our soft variant is an instance, with function "
-        "words as the prior. The MAiDE-up dataset provides human and GPT-4 hotel reviews and is our "
+        "spurious correlations [9], with NLP-specific evidence of annotation artefacts and "
+        "“right-for-the-wrong-reasons” behaviour [20, 21]. On the explanation side, gradient and "
+        "perturbation attributions include Integrated Gradients [3], LIME [11] and SHAP [12]; "
+        "faithfulness is formalised by ERASER comprehensiveness/sufficiency [4], deletion/insertion "
+        "curves [8], and the broader discussion of what faithful interpretation requires [13]. "
+        "Attribution regularisation (“right for the right reasons”) trains models to place gradient "
+        "mass where a prior says it should [5]; our soft variant is an instance with function words "
+        "as the prior. The MAiDE-up dataset [1] provides human and GPT-4 hotel reviews and is our "
         "in-domain benchmark.")
 
-    # 3. Method
+    # ------------------------------ Method ------------------------------ #
     h(doc, "3  Method", 1)
     h(doc, "3.1  Function-word set", 2)
     fw_n = r.get("meta", {}).get("fw_set_size", "")
     para(doc,
         f"We define an auditable English function-word set ({fw_n} surface forms) as the union of a "
         "curated closed-class list (articles, prepositions, conjunctions, auxiliaries, pronouns, "
-        "particles, determiners) and the standard NLTK, scikit-learn and spaCy stop-word lists. The "
-        "set is fixed and surface-form based, so identification is deterministic at inference. A word "
-        "is a function word if its lower-cased, punctuation-stripped form is in the set.")
+        "particles, determiners) and the standard NLTK, scikit-learn and spaCy stop-word lists [25]. "
+        "The set is fixed and surface-form based, so identification is deterministic at inference: a "
+        "word is a function word if its lower-cased, punctuation-stripped form is in the set.")
     h(doc, "3.2  Hard-masking (provable invariance)", 2)
     para(doc,
-        "Given a review, we tokenise with the encoder's byte-level BPE and map each sub-token back to "
-        "its surface word via offset alignment. Every sub-token belonging to a function word is "
-        "replaced by a single added placeholder token [FUNC] before encoding. Because all function "
-        "words map to the same placeholder, the encoder — and therefore the classifier — "
-        "cannot distinguish which function word occurred or, indeed, that it was a particular word at "
-        "all: the decision is invariant to function-word identity by construction. We verify this "
-        "with an automated test that asserts bit-identical logits when function words are permuted.")
+        "We tokenise with the encoder's byte-level BPE and map each sub-token back to its surface "
+        "word via offset alignment. Every sub-token belonging to a function word is replaced by a "
+        "single added placeholder token [FUNC] before encoding. Because all function words map to "
+        "the same placeholder, the encoder — and therefore the classifier — cannot distinguish which "
+        "function word occurred: the decision is invariant to function-word identity by construction. "
+        "An automated test asserts bit-identical logits when function words are permuted.")
     h(doc, "3.3  Soft attribution regularisation", 2)
     para(doc,
-        "The soft variant keeps the full text and adds a penalty to the training loss equal to the "
-        "fraction of input-gradient saliency that lands on function-word tokens (a gradient-times-"
-        "input estimate, with create_graph so the penalty back-propagates into the weights). To keep "
-        "memory bounded at large batch and sequence length, the second-order penalty is computed on "
-        "a small sub-batch — an unbiased stochastic estimate of the regulariser — while the "
-        "cross-entropy uses the full batch.")
+        "The soft variant keeps the full text and adds a penalty equal to the fraction of input-"
+        "gradient saliency that lands on function-word tokens (gradient-times-input, with create_"
+        "graph so the penalty back-propagates into the weights) [5]. To bound memory at large batch "
+        "and sequence length, the second-order penalty is computed on a small sub-batch — an unbiased "
+        "stochastic estimate — while the cross-entropy uses the full batch.")
     h(doc, "3.4  Faithful, content-only explanations", 2)
     para(doc,
         "All attributions are computed on the actual deployed model (including the hard-masking "
-        "transform), never a surrogate. We use Integrated Gradients on the embedding layer "
-        "(a portable manual Riemann implementation) and leave-one-word-out occlusion, aggregated to "
-        "word level; function words are excluded from the displayed explanation. We report two "
-        "reliance metrics: function-word attribution mass (the share of total absolute attribution on "
-        "function words) and identity-sensitivity (the mean change in AI probability when each "
-        "function word is replaced by a different function word). For explanation quality we report "
-        "ERASER comprehensiveness and sufficiency and deletion/insertion AUC over content words.")
+        "transform), never a surrogate. We use Integrated Gradients on the embedding layer [3] and "
+        "leave-one-word-out occlusion, aggregated to word level; function words are excluded from the "
+        "displayed explanation. We report two reliance metrics: function-word attribution mass (the "
+        "share of total absolute attribution on function words) and identity-sensitivity (the mean "
+        "change in AI probability when each function word is replaced by a different function word). "
+        "For explanation quality we report ERASER comprehensiveness and sufficiency [4] and "
+        "deletion/insertion AUC over content words [8].")
 
-    # 4. Experimental setup
+    # -------------------------- Experimental setup ---------------------- #
     h(doc, "4  Experimental Setup", 1)
     sd = r.get("split_describe", {})
     split_line = ""
     if sd:
         split_line = (f" Splits are grouped by hotel (train {sd['train']['n']}, val {sd['val']['n']}, "
-                      f"test {sd['test']['n']}; train↔test hotel overlap "
-                      f"{sd['hotel_leakage_train_test']}).")
+                      f"test {sd['test']['n']}; train↔test hotel overlap {sd['hotel_leakage_train_test']}).")
     para(doc,
-        f"In-domain data is the English subset of MAiDE-up (human vs GPT-4 hotel reviews). Because "
+        "In-domain data is the English subset of MAiDE-up (human vs GPT-4 hotel reviews) [1]. Because "
         "every hotel appears in both classes, a random split leaks hotel-specific content across "
         "train and test; we therefore use grouped (by-hotel) splits and additionally report a random "
-        "split to quantify the leakage." + split_line +
-        f" We fine-tune {enc} for each of {n_seeds} seeds and report mean ± 95% confidence "
-        "interval. Out-of-distribution evaluation uses the RAID benchmark's reviews domain "
-        "(cross-domain, and spanning multiple generators including GPT-3.5/4, Cohere and Llama). "
+        "split to quantify the leakage (Figure 1)." + split_line +
+        f" We fine-tune {enc} [10] with AdamW [23] for each of {n_seeds} seeds and report mean ± 95% "
+        "confidence interval. Out-of-distribution evaluation uses the RAID benchmark's reviews domain "
+        "[2] (cross-domain, spanning multiple generators including GPT-3.5/4, Cohere and Llama). "
         "Robustness is probed with a function-word attack (deleting/duplicating/swapping function "
-        "words) and a WordNet synonym attack on content words. Baselines are TF-IDF + logistic "
+        "words) and a WordNet [22] synonym attack on content words. Baselines are TF-IDF + logistic "
         "regression and a content-only TF-IDF variant. Significance between models on the shared test "
-        "set uses McNemar's test.")
+        "set uses McNemar's test; intervals use Student-t and the bootstrap.")
+    fig("01_dataset_overview.png",
+        "MAiDE-up English splits used for training/validation/test (grouped, zero train↔test hotel "
+        "leakage).", 4.2)
 
-    # 5. Results
+    # ------------------------------ Results ----------------------------- #
     h(doc, "5  Results", 1)
-    add_figure(doc, os.path.join(figdir, "01_dataset_overview.png"),
-               "Figure 1: MAiDE-up English splits (grouped, zero train↔test hotel leakage).", 4.2)
 
-    h(doc, "5.1  In-domain: invariance is free", 2)
+    h(doc, "5.1  In-domain performance", 2)
     rows = []
     for v in VARIANTS:
         rows.append([LABEL[v], mean_ci(agg(r, v, "indomain", "f1_macro")),
@@ -271,30 +264,35 @@ def build(r, figdir, out):
     sig = r.get("significance", {}).get("indomain_baseline_vs_hardmask", {})
     pval = sig.get("pvalue")
     para(doc,
-        "All three neural variants are statistically indistinguishable in-domain"
+        "On in-distribution data the three neural variants are statistically indistinguishable"
         + (f" (McNemar baseline vs. Hard-Mask, p = {pval:.2f})" if pval is not None else "")
-        + "; Hard-Mask attains the same F1 as the unconstrained baseline with the tightest interval. "
-        "Function-word invariance costs essentially nothing on in-distribution data.")
-    add_figure(doc, os.path.join(figdir, "03_indomain_performance.png"),
-               "Figure 2: In-domain F1 (mean ± 95% CI over seeds), with classic baselines.", 5.5)
+        + "; Hard-Mask attains the same F1 as the unconstrained baseline, with the tightest interval. "
+        "Function-word invariance therefore carries no measurable in-domain cost on this benchmark "
+        "(Figure 2). Confusion matrices (Figure 3) and ROC/PR curves (Figure 4) show the same "
+        "ordering, with very high ROC-AUC for all neural variants.")
+    fig("03_indomain_performance.png", "In-domain F1 (mean ± 95% CI over seeds) with classic baselines.")
+    fig("04_confusion_matrices.png", "In-domain confusion matrices (reference seed) by variant.", 6.2)
+    fig("05_roc_pr.png", "In-domain ROC and precision–recall curves (reference seed).", 6.2)
 
     h(doc, "5.2  Function-word reliance", 2)
     rows = []
     for v in VARIANTS:
         fm = r.get("fw_mass", {}).get(v, {})
         ids = r.get("fw_identity_sensitivity", {}).get(v, {})
-        rows.append([LABEL[v],
-                     (pct(fm["mean"]) + "%") if fm else "—",
+        rows.append([LABEL[v], (pct(fm["mean"]) + "%") if fm else "—",
                      (pct(ids["mean"], 2) + "%") if ids else "—"])
-    add_table(doc, ["Variant", "FW attribution mass (IG)", "Identity-sensitivity |Δp|"], rows, bold_last_col=False)
+    add_table(doc, ["Variant", "FW attribution mass (IG)", "Identity-sensitivity |Δp|"], rows)
     para(doc,
-        "The unconstrained baseline places a large share of its attribution on function words; soft "
-        "regularisation reduces it; hard masking eliminates it (0.00%). The identity-sensitivity "
-        "metric, which needs only forward passes, corroborates this directly.")
-    add_figure(doc, os.path.join(figdir, "08_fw_attribution_mass.png"),
-               "Figure 3: Integrated-Gradients attribution mass on function words by variant.", 5.0)
+        "The unconstrained baseline places a substantial share of its attribution on function words; "
+        "soft regularisation reduces it; hard masking eliminates it (Figure 5). The forward-only "
+        "identity-sensitivity metric — the change in AI probability when function words are swapped — "
+        "agrees: it is near zero for Hard-Mask and clearly positive for the baseline (Figure 6). The "
+        "two metrics are consistent because they measure the same property (reliance on function-word "
+        "identity) from gradient and perturbation perspectives.")
+    fig("08_fw_attribution_mass.png", "Integrated-Gradients attribution mass on function words by variant.", 5.0)
+    fig("08b_fw_identity_sensitivity.png", "Change in AI probability when function words are swapped (identity-sensitivity).", 5.0)
 
-    h(doc, "5.3  Robustness to attacks", 2)
+    h(doc, "5.3  Robustness to text attacks", 2)
     attacks = list(r["variants"][VARIANTS[0]].get("attacks", {}).keys())
     header = ["Variant", "Clean"] + [a.replace("_", " ") for a in attacks]
     rows = []
@@ -307,12 +305,12 @@ def build(r, figdir, out):
         rows.append(row)
     add_table(doc, header, rows)
     para(doc,
-        "Under the function-word attack the baseline and soft variants lose several points, whereas "
-        "Hard-Mask is unmoved — perturbing function words cannot affect a decision that ignores "
-        "them. Hard-Mask is also the most robust to synonym substitution. This is the clearest "
-        "empirical benefit of invariance.")
-    add_figure(doc, os.path.join(figdir, "07_robustness.png"),
-               "Figure 4: F1 under text attacks. Hard-Mask is flat under the function-word attack.", 5.5)
+        "Under the function-word attack, the baseline and soft variants lose several points whereas "
+        "Hard-Mask is essentially unaffected — perturbing function words cannot move a decision that "
+        "ignores them. Under synonym substitution all variants degrade, but Hard-Mask degrades least "
+        "and retains the highest F1 (Figure 7). These are the clearest empirical benefits of "
+        "invariance; we do not claim improvements beyond the two attacks tested.")
+    fig("07_robustness.png", "F1 under text attacks. Hard-Mask is flat under the function-word attack.")
 
     h(doc, "5.4  Cross-domain and cross-generator transfer", 2)
     rows = []
@@ -322,27 +320,18 @@ def build(r, figdir, out):
     add_table(doc, ["Variant", "In-domain F1", "OOD F1 (RAID reviews)"], rows)
     para(doc,
         "On the cross-domain OOD set (hotel → movie reviews) the picture reverses: Hard-Mask "
-        "transfers worse than the baseline, with non-overlapping intervals. When the content "
-        "vocabulary shifts, the content words Hard-Mask depends on largely disappear, while the "
-        "baseline's function-word and stylistic cues evidently carry domain-general signal. Function "
-        "words are thus not pure noise; in cross-domain transfer they can be useful. The per-"
-        "generator breakdown (Figure 6) shows the same ordering across most generators. We note that "
-        "this OOD conflates domain and generator shift and is an extreme content change; a same-"
-        "domain, different-generator test would isolate the cross-generator question.")
-    add_figure(doc, os.path.join(figdir, "06_ood_transfer.png"),
-               "Figure 5: In-domain vs. cross-domain OOD F1 by variant.", 5.5)
-    add_figure(doc, os.path.join(figdir, "06b_cross_generator.png"),
-               "Figure 6: Per-generator detection F1 on RAID reviews (humans vs. each generator).", 6.0)
+        "transfers worse than the baseline, with non-overlapping confidence intervals (Figure 8). "
+        "When the content vocabulary shifts, the content words Hard-Mask depends on largely "
+        "disappear, while the baseline's function-word and stylistic cues evidently carry domain-"
+        "general signal. Function words are thus not pure noise; in cross-domain transfer they can be "
+        "useful. The per-generator breakdown (Figure 9) shows the same ordering across most "
+        "generators. We emphasise a confound: this OOD shifts both domain and generator at once and "
+        "is an extreme content change, so it does not isolate cross-generator transfer; a same-"
+        "domain, different-generator test would be needed for that claim.")
+    fig("06_ood_transfer.png", "In-domain vs. cross-domain OOD F1 by variant (mean ± 95% CI).")
+    fig("06b_cross_generator.png", "Per-generator detection F1 on RAID reviews (humans vs. each generator).", 6.2)
 
-    h(doc, "5.5  Leakage and faithfulness", 2)
-    lk = r.get("leakage", {})
-    if lk:
-        para(doc,
-            f"A naive random split inflates baseline F1 to {pct(lk['random']['f1_macro'])}% versus "
-            f"{pct(lk['grouped']['f1_macro'])}% under the grouped, leakage-free split — a gap that "
-            "earlier work on this data did not control for. We report grouped numbers throughout.")
-    add_figure(doc, os.path.join(figdir, "02_leakage_gap.png"),
-               "Figure 7: Random vs. grouped split (baseline): random splitting inflates scores.", 4.6)
+    h(doc, "5.5  Explanation faithfulness", 2)
     rows = []
     for v in VARIANTS:
         f = r["variants"].get(v, {}).get("faithfulness", {}).get("summary")
@@ -351,63 +340,136 @@ def build(r, figdir, out):
                          f"{f.get('deletion_auc',0):.3f}", f"{f.get('insertion_auc',0):.3f}"])
     if rows:
         add_table(doc, ["Variant", "Compr.↑", "Suff.↓", "Del-AUC↓", "Ins-AUC↑"], rows)
-        para(doc,
-            "Faithfulness is comparable across variants and mixed in direction; Hard-Mask is strongest "
-            "on sufficiency and insertion. The headline explanation result is qualitative and "
-            "structural: explanations are content-only by construction (Figure 8), computed on the "
-            "deployed model rather than a surrogate.")
-    add_figure(doc, os.path.join(figdir, "14_example_explanation.png"),
-               "Figure 8: Real, content-focused explanations; function words are greyed out.", 6.0)
+    para(doc,
+        "Faithfulness is comparable across variants and mixed in direction (Figure 10): no variant "
+        "dominates on all four measures, with Hard-Mask strongest on sufficiency and insertion and "
+        "the baseline stronger on comprehensiveness. Deletion/insertion curves (Figure 11) tell the "
+        "same story. We therefore do not claim a faithfulness improvement from invariance; the "
+        "explanation contribution is structural — explanations are content-only by construction and "
+        "computed on the deployed model (Figure 12) — rather than a higher faithfulness score.")
+    fig("09_faithfulness.png", "ERASER comprehensiveness/sufficiency and deletion/insertion AUC by variant.")
+    fig("10_deletion_insertion_curves.png", "Mean deletion and insertion curves over content words.", 6.2)
+    fig("14_example_explanation.png", "Example explanations: content words highlighted, function words greyed.", 6.2)
 
-    # 6. Discussion
+    h(doc, "5.6  Calibration and representation", 2)
+    para(doc,
+        "Reliability diagrams (Figure 13) summarise calibration on the in-domain test set via the "
+        "expected calibration error [19]; we report it for completeness rather than as a contribution. "
+        "A two-dimensional projection of the encoder representations (Figure 14) shows that human and "
+        "AI reviews are well separated in-domain for all variants.")
+    fig("11_calibration.png", "Reliability diagrams (in-domain) with expected calibration error.", 4.8)
+    fig("13_embedding_projection.png", "2-D projection of encoder representations of the test set.", 6.2)
+
+    h(doc, "5.7  Leakage", 2)
+    lk = r.get("leakage", {})
+    if lk:
+        para(doc,
+            f"A naive random split inflates baseline F1 to {pct(lk['random']['f1_macro'])}% versus "
+            f"{pct(lk['grouped']['f1_macro'])}% under the grouped, leakage-free split (Figure 15). "
+            "Because hotels recur with both labels, a random split lets the model exploit hotel-"
+            "specific content; we report grouped numbers throughout and recommend grouped splits for "
+            "this dataset.")
+    fig("02_leakage_gap.png", "Random vs. grouped split (baseline): random splitting overstates scores.", 4.6)
+
+    # ----------------------------- Discussion --------------------------- #
     h(doc, "6  Discussion", 1)
     para(doc,
-        "Our results give a nuanced answer to the motivating question. Making a detector ignore "
-        "function words is free in-distribution, yields a provable invariance and the best "
-        "robustness to text attacks, and produces explanations that are content-only by construction "
-        "— in contrast to post-hoc, surrogate-based explanations. The cost is "
-        "cross-domain transfer: when the content vocabulary changes, function-word and stylistic "
-        "regularities that the constrained model discards turn out to carry domain-general signal. "
-        "Practically, hard masking is attractive where robustness, auditability and a guarantee "
-        "matter and the domain is fixed; the unconstrained or soft model is preferable for open-"
-        "domain transfer. Limitations: English only; a single in-domain generator (GPT-4), so cross-"
-        "generator evidence comes from a benchmark that also shifts domain; and a modest in-domain "
-        "set. Isolating cross-generator transfer within a single domain is the clearest next step.")
+        "Making a detector ignore function words is free in-distribution on this benchmark, yields a "
+        "provable invariance and the best robustness to the two attacks we test, and produces "
+        "explanations that are content-only by construction — in contrast to post-hoc, surrogate-"
+        "based explanations. The cost is cross-domain transfer: when the content vocabulary changes, "
+        "function-word and stylistic regularities that the constrained model discards carry domain-"
+        "general signal. Practically, hard masking is attractive where robustness, auditability and a "
+        "guarantee matter and the domain is fixed; the unconstrained or soft model is preferable for "
+        "open-domain transfer. We deliberately avoid stronger claims: results are on one in-domain "
+        "dataset and two attacks, and the OOD evidence is a single benchmark.")
 
-    # 7. Conclusion
-    h(doc, "7  Conclusion", 1)
+    # ----------------------------- Limitations -------------------------- #
+    h(doc, "7  Limitations", 1)
+    para(doc,
+        "The study is English-only and uses a single in-domain generator (GPT-4), so cross-generator "
+        "evidence comes from a benchmark that also shifts domain and cannot isolate generator effects. "
+        "The in-domain set is modest (2,000 reviews), which widens confidence intervals; we report "
+        "them honestly rather than selecting favourable seeds. The two attacks are simple proxies for "
+        "adversarial and paraphrase pressure, not an exhaustive robustness audit. Faithfulness metrics "
+        "are themselves contested [13] and we do not treat any single one as decisive. Finally, "
+        "function-word invariance is a design choice with a measured trade-off, not a universally "
+        "preferable configuration.")
+
+    # ----------------------------- Conclusion --------------------------- #
+    h(doc, "8  Conclusion", 1)
     para(doc,
         "Function words are a measurable shortcut in AI-text detection. A detector that provably "
-        "ignores them keeps in-domain accuracy, gains robustness, and explains itself with content "
-        "alone — at a characterised cost to cross-domain transfer. We release code, leakage-free "
-        "protocols, multi-seed results with confidence intervals, and figures that regenerate from a "
-        "single results file.")
+        "ignores them keeps in-domain accuracy, gains robustness to the attacks we test, and explains "
+        "itself with content alone — at a measured cost to cross-domain transfer. We release code, "
+        "leakage-free protocols, multi-seed results with confidence intervals, and figures that "
+        "regenerate from a single results file.")
 
-    # Reproducibility + References
+    # --------------------------- Reproducibility ------------------------ #
     h(doc, "Reproducibility", 1)
     para(doc,
         "All numbers come from a single results JSON; every figure regenerates via "
-        "scripts/make_figures.py; the hard-masking guarantee is asserted by tests/test_invariance.py. "
-        "Code: github.com/scar09-22/FAITH-Detect.", size=10)
+        "scripts/make_figures.py and this paper via scripts/make_paper.py; the hard-masking guarantee "
+        "is asserted by tests/test_invariance.py. Code: github.com/scar09-22/FAITH-Detect.", size=10)
 
+    # ------------------------------ Appendix ---------------------------- #
+    h(doc, "Appendix A  Training behaviour", 1)
+    para(doc,
+        "Figure 16 shows training loss and validation F1 by epoch, averaged over seeds, for the three "
+        "variants; the soft and hard variants start slower (they discard or down-weight function-word "
+        "information) but reach comparable validation F1.")
+    fig("12_learning_curves.png", "Training loss and validation F1 by epoch (mean over seeds).", 6.2)
+
+    # ----------------------------- References --------------------------- #
     h(doc, "References", 1)
     refs = [
         "Ignat, O., Xu, X., Mihalcea, R. (2025). MAiDE-up: Multilingual Deception Detection of "
         "AI-Generated Hotel Reviews. Findings of NAACL.",
-        "Dugan, L., et al. (2024). RAID: A Shared Benchmark for Robust Evaluation of Machine-"
-        "Generated Text Detectors. ACL.",
+        "Dugan, L., Hwang, A., Trhlik, F., et al. (2024). RAID: A Shared Benchmark for Robust "
+        "Evaluation of Machine-Generated Text Detectors. ACL.",
         "Sundararajan, M., Taly, A., Yan, Q. (2017). Axiomatic Attribution for Deep Networks "
         "(Integrated Gradients). ICML.",
-        "DeYoung, J., et al. (2020). ERASER: A Benchmark to Evaluate Rationalized NLP Models. ACL.",
-        "Ross, A. S., Hughes, M. C., Doshi-Velez, F. (2017). Right for the Right Reasons. IJCAI.",
-        "Mitchell, E., et al. (2023). DetectGPT: Zero-Shot Machine-Generated Text Detection. ICML.",
-        "Gehrmann, S., Strobelt, H., Rush, A. (2019). GLTR: Statistical Detection and Visualization "
-        "of Generated Text. ACL (demo).",
-        "Petsiuk, V., Das, A., Saenko, K. (2018). RISE: Randomized Input Sampling for Explanation. "
-        "BMVC.",
-        "Geirhos, R., et al. (2020). Shortcut Learning in Deep Neural Networks. Nature Machine "
-        "Intelligence.",
-        "Liu, Y., et al. (2019). RoBERTa: A Robustly Optimized BERT Pretraining Approach. arXiv.",
+        "DeYoung, J., Jain, S., Rajani, N. F., et al. (2020). ERASER: A Benchmark to Evaluate "
+        "Rationalized NLP Models. ACL.",
+        "Ross, A. S., Hughes, M. C., Doshi-Velez, F. (2017). Right for the Right Reasons: Training "
+        "Differentiable Models by Constraining their Explanations. IJCAI.",
+        "Mitchell, E., Lee, Y., Khazatsky, A., Manning, C. D., Finn, C. (2023). DetectGPT: Zero-Shot "
+        "Machine-Generated Text Detection using Probability Curvature. ICML.",
+        "Gehrmann, S., Strobelt, H., Rush, A. M. (2019). GLTR: Statistical Detection and "
+        "Visualization of Generated Text. ACL (System Demonstrations).",
+        "Petsiuk, V., Das, A., Saenko, K. (2018). RISE: Randomized Input Sampling for Explanation of "
+        "Black-box Models. BMVC.",
+        "Geirhos, R., Jacobsen, J.-H., Michaelis, C., et al. (2020). Shortcut Learning in Deep Neural "
+        "Networks. Nature Machine Intelligence.",
+        "Liu, Y., Ott, M., Goyal, N., et al. (2019). RoBERTa: A Robustly Optimized BERT Pretraining "
+        "Approach. arXiv:1907.11692.",
+        "Ribeiro, M. T., Singh, S., Guestrin, C. (2016). “Why Should I Trust You?”: Explaining the "
+        "Predictions of Any Classifier (LIME). KDD.",
+        "Lundberg, S. M., Lee, S.-I. (2017). A Unified Approach to Interpreting Model Predictions "
+        "(SHAP). NeurIPS.",
+        "Jacovi, A., Goldberg, Y. (2020). Towards Faithfully Interpretable NLP Systems: How Should We "
+        "Define and Evaluate Faithfulness? ACL.",
+        "Sadasivan, V. S., Kumar, A., Balasubramanian, S., Wang, W., Feizi, S. (2023). Can "
+        "AI-Generated Text be Reliably Detected? arXiv:2303.11156.",
+        "Krishna, K., Song, Y., Karpinska, M., Wieting, J., Iyyer, M. (2023). Paraphrasing Evades "
+        "Detectors of AI-Generated Text, but Retrieval is an Effective Defense. NeurIPS.",
+        "Solaiman, I., Brundage, M., Clark, J., et al. (2019). Release Strategies and the Social "
+        "Impacts of Language Models. arXiv:1908.09203.",
+        "Crothers, E., Japkowicz, N., Viktor, H. L. (2023). Machine-Generated Text: A Comprehensive "
+        "Survey of Threat Models and Detection Methods. IEEE Access.",
+        "Uchendu, A., Ma, Z., Le, T., Zhang, R., Lee, D. (2021). TURINGBENCH: A Benchmark Environment "
+        "for Turing Test in the Age of Neural Text Generation. Findings of EMNLP.",
+        "Guo, C., Pleiss, G., Sun, Y., Weinberger, K. Q. (2017). On Calibration of Modern Neural "
+        "Networks. ICML.",
+        "Gururangan, S., Swayamdipta, S., Levy, O., et al. (2018). Annotation Artifacts in Natural "
+        "Language Inference Data. NAACL.",
+        "McCoy, T., Pavlick, E., Linzen, T. (2019). Right for the Wrong Reasons: Diagnosing Syntactic "
+        "Heuristics in Natural Language Inference. ACL.",
+        "Miller, G. A. (1995). WordNet: A Lexical Database for English. Communications of the ACM.",
+        "Loshchilov, I., Hutter, F. (2019). Decoupled Weight Decay Regularization (AdamW). ICLR.",
+        "Devlin, J., Chang, M.-W., Lee, K., Toutanova, K. (2019). BERT: Pre-training of Deep "
+        "Bidirectional Transformers for Language Understanding. NAACL.",
+        "Honnibal, M., Montani, I. (2017). spaCy: Industrial-Strength Natural Language Processing.",
     ]
     for i, ref in enumerate(refs, 1):
         p = doc.add_paragraph(f"[{i}] {ref}")
@@ -415,7 +477,7 @@ def build(r, figdir, out):
 
     os.makedirs(os.path.dirname(out), exist_ok=True)
     doc.save(out)
-    print(f"Saved {out}")
+    print(f"Saved {out}  ({fignum[0]} figures embedded, {len(refs)} references)")
 
 
 def main():

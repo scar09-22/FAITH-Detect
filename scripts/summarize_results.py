@@ -36,15 +36,25 @@ def main():
 
     # In-domain + OOD table
     print("## In-domain (grouped) and OOD (RAID) — mean ± 95% CI over seeds\n")
-    print("| Variant | In-domain F1 | In-domain ROC-AUC | OOD F1 |")
-    print("|---|---|---|---|")
+    print("| Variant | In-domain F1 | In-domain ROC-AUC | OOD F1 | Held-out-gen F1 |")
+    print("|---|---|---|---|---|")
     for v in VARIANTS:
         if v not in r.get("variants", {}):
             continue
         ind = r["variants"][v].get("indomain", {}).get("aggregated", {})
         ood = r["variants"][v].get("ood", {}).get("aggregated", {})
+        ho = r["variants"][v].get("heldout_gen", {}).get("aggregated", {})
         print(f"| {LBL[v]} | {_cell(ind,'f1_macro')} | {_cell(ind,'roc_auc')} | "
-              f"{_cell(ood,'f1_macro') if ood else '—'} |")
+              f"{_cell(ood,'f1_macro') if ood else '—'} | {_cell(ho,'f1_macro') if ho else '—'} |")
+    hp = r.get("heldout_per_generator", {})
+    if hp:
+        gens = sorted(set().union(*[set(d) for d in hp.values()]))
+        print("\n## Held-out generators (same domain, mixed-generator training) — ref-seed F1\n")
+        print("| Generator | " + " | ".join(LBL[v] for v in VARIANTS if v in hp) + " |")
+        print("|---|" + "---|" * len([v for v in VARIANTS if v in hp]))
+        for g in gens:
+            cells = [f"{hp[v].get(g, float('nan'))*100:.1f}%" for v in VARIANTS if v in hp]
+            print(f"| {g} | " + " | ".join(cells) + " |")
     for bname, b in r.get("baselines", {}).items():
         m = b["metrics"]; om = b.get("ood_metrics", {})
         print(f"| {bname} | {m['f1_macro']*100:.1f}% | {m.get('roc_auc',0)*100:.1f}% | "

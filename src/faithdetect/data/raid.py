@@ -79,6 +79,45 @@ def load_raid_from_csv(
     return df
 
 
+def generator_split(
+    df: pd.DataFrame,
+    held_in: tuple,
+    held_out: tuple,
+    seed: int = 0,
+    human_frac_train: float = 0.5,
+    ai_cap_per_gen: int | None = None,
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Split one RAID pool into a training mix and a held-out-generator evaluation frame.
+
+    For the mixed-generator training experiment: AI rows from `held_in` generators (plus a
+    fraction of the human rows) become extra TRAINING data; AI rows from `held_out`
+    generators (plus the remaining humans) become a same-domain, different-generator
+    evaluation frame. The two frames are disjoint by construction, so there is no leakage
+    between the training mix and the held-out evaluation.
+
+    Returns (train_extra, heldout_eval); both have columns text, label (and keep `model`
+    for per-generator breakdowns).
+    """
+    held_in, held_out = set(held_in), set(held_out)
+    overlap = held_in & held_out
+    if overlap:
+        raise ValueError(f"Generators cannot be both held-in and held-out: {sorted(overlap)}")
+    rng = np.random.default_rng(seed)
+    humans = df[df["model"] == "human"].sample(frac=1.0, random_state=seed).reset_index(drop=True)
+    n_train_h = int(round(human_frac_train * len(humans)))
+    train_humans, eval_humans = humans.iloc[:n_train_h], humans.iloc[n_train_h:]
+    train_ai = df[df["model"].isin(held_in)]
+    if ai_cap_per_gen:
+        # Cap AI rows per held-in generator so the training mix stays label-balanced.
+        train_ai = (train_ai.sample(frac=1.0, random_state=seed)
+                    .groupby("model", group_keys=False).head(ai_cap_per_gen))
+    eval_ai = df[df["model"].isin(held_out)]
+    cols = [c for c in ("text", "label", "model") if c in df.columns]
+    train_extra = pd.concat([train_humans, train_ai])[cols].sample(frac=1.0, random_state=seed)
+    heldout_eval = pd.concat([eval_humans, eval_ai])[cols].sample(frac=1.0, random_state=seed)
+    return train_extra.reset_index(drop=True), heldout_eval.reset_index(drop=True)
+
+
 def _balance(df: pd.DataFrame, seed: int) -> pd.DataFrame:
     rng = np.random.default_rng(seed)
     n = min(int((df["label"] == HUMAN_LABEL).sum()), int((df["label"] == AI_LABEL).sum()))

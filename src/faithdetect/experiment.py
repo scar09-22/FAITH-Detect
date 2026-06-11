@@ -55,6 +55,15 @@ class ExperimentConfig:
     # ood_per_generator adds a cross-generator detection breakdown + figure.
     ood_csv_path: str | None = None
     ood_per_generator: bool = True
+    # Mixed-generator training (same-domain cross-generator evaluation). When
+    # train_mix_parquet is set, AI rows from train_mix_generators (plus half the human rows)
+    # are ADDED to the training set, and a disjoint frame of heldout_generators (plus the
+    # other half of the humans) is evaluated as same-domain, different-generator OOD. The
+    # plain ood_cache evaluation is skipped in this mode to avoid train/eval row overlap.
+    train_mix_parquet: str | None = None
+    train_mix_generators: tuple = ()
+    heldout_generators: tuple = ()
+    train_mix_ai_cap: int | None = 150   # per-generator AI cap keeps the mix label-balanced
     # robustness
     attack_types: tuple = ("function_word", "synonym")
     attack_rate: float = 0.5
@@ -95,6 +104,26 @@ def run_one_cell(cfg: "ExperimentConfig", variant: str, seed: int, compute_xai: 
     splits = make_splits(df, mode="grouped", seed=seed)
     if cfg.train_subsample:
         splits.train = _subsample(splits.train, cfg.train_subsample, seed)
+
+    # Mixed-generator training: add held-in-generator rows (+half the humans) to training,
+    # reserve held-out generators (+other humans) for same-domain cross-generator evaluation.
+    heldout_eval = None
+    if cfg.train_mix_parquet and os.path.exists(cfg.train_mix_parquet):
+        import pandas as pd
+        from .data import generator_split
+        pool = pd.read_parquet(cfg.train_mix_parquet)
+        train_extra, heldout_eval = generator_split(
+            pool, cfg.train_mix_generators, cfg.heldout_generators, seed=cfg.seeds[0],
+            ai_cap_per_gen=cfg.train_mix_ai_cap,
+        )
+        extra = train_extra[["text", "label"]].copy()
+        extra["hotel"] = None
+        splits.train = pd.concat([splits.train, extra], ignore_index=True).sample(
+            frac=1.0, random_state=seed).reset_index(drop=True)
+        print(f"   [mix] +{len(extra)} train rows from {sorted(set(cfg.train_mix_generators))}; "
+              f"heldout eval {len(heldout_eval)} rows from {sorted(set(cfg.heldout_generators))}",
+              flush=True)
+
     mcfg = ModelConfig(encoder_name=cfg.encoder_name, variant=variant,
                        max_length=cfg.max_length, softreg_lambda=cfg.softreg_lambda)
     tcfg = TrainConfig(epochs=cfg.epochs, batch_size=cfg.batch_size, lr=cfg.lr)
@@ -106,7 +135,21 @@ def run_one_cell(cfg: "ExperimentConfig", variant: str, seed: int, compute_xai: 
     cell["indomain"] = ind["metrics"]
     cell["indomain_preds"] = {k: ind[k] for k in ("y_true", "y_pred", "p_ai")}
 
-    if cfg.ood_cache and os.path.exists(cfg.ood_cache):
+    if heldout_eval is not None:
+        from sklearn.metrics import f1_score
+        ho = evaluate_split(model, heldout_eval, mcfg, tokenizer, func_id, fw_set, device)
+        cell["heldout_gen"] = ho["metrics"]
+        # Per-generator breakdown: humans vs each held-out generator.
+        models_col = heldout_eval["model"].values
+        yt, yp = np.array(ho["y_true"]), np.array(ho["y_pred"])
+        human_mask = models_col == "human"
+        per_gen = {}
+        for g in sorted(set(models_col) - {"human"}):
+            sel = human_mask | (models_col == g)
+            if sel.sum() >= 10 and len(set(yt[sel])) == 2:
+                per_gen[g] = float(f1_score(yt[sel], yp[sel], average="macro"))
+        cell["heldout_per_generator"] = per_gen
+    elif cfg.ood_cache and os.path.exists(cfg.ood_cache):
         import pandas as pd
         ood_df = pd.read_parquet(cfg.ood_cache)
         oo = evaluate_split(model, ood_df, mcfg, tokenizer, func_id, fw_set, device)

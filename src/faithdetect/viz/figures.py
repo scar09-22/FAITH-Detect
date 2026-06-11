@@ -215,6 +215,57 @@ def fig_cross_generator(results, path):
     _save(fig, path)
 
 
+def fig_heldout_generator(results, path):
+    """Mixed-generator training: same-domain held-out-generator F1 by variant (the clean
+    cross-generator test — generators differ, domain does not)."""
+    hp = results.get("heldout_per_generator", {})
+    variants = [v for v in VARIANT_ORDER if v in hp and hp[v]]
+    if not variants:
+        return
+    gens = sorted(set().union(*[set(hp[v].keys()) for v in variants]))
+    fig, ax = plt.subplots(figsize=(max(7, 1.1 * len(gens)), 4.6))
+    x = np.arange(len(gens)); w = 0.8 / len(variants)
+    for i, v in enumerate(variants):
+        vals = [hp[v].get(g, np.nan) for g in gens]
+        ax.bar(x + (i - (len(variants) - 1) / 2) * w, vals, w, label=VARIANT_LABEL[v], color=VARIANT_COLOR[v])
+        agg_f1 = _agg(results, v, "heldout_gen", "f1_macro")
+        if agg_f1:
+            ax.axhline(agg_f1["mean"], color=VARIANT_COLOR[v], ls=":", lw=1, alpha=0.6)
+    ax.set_xticks(x); ax.set_xticklabels(gens, rotation=30, ha="right")
+    ax.set_ylim(0, 1.02); ax.set_ylabel("Detection F1 (macro)")
+    ax.set_title("Held-out generators after mixed-generator training (same domain)")
+    ax.legend(fontsize=8)
+    _save(fig, path)
+
+
+def fig_category_ablation(ablation: dict, path):
+    """Per-category masking ablation: in-domain vs OOD F1 when masking ONLY one category.
+
+    `ablation` is the JSON produced by scripts/run_category_ablation.py (not the main
+    results dict)."""
+    cats = ablation.get("categories", {})
+    if not cats:
+        return
+    names = [c for c in cats if c != "union"] + (["union"] if "union" in cats else [])
+    fig, ax = plt.subplots(figsize=(max(7.5, 1.2 * len(names)), 4.6))
+    x = np.arange(len(names)); w = 0.38
+    for j, (axis, label, color) in enumerate([
+        ("indomain", "In-domain", "#4c78a8"), ("ood", "OOD", "#e45756")]):
+        means, yerr = [], [[], []]
+        for c in names:
+            it = cats[c].get(axis, {}).get("f1_macro")
+            m, e = _errbar(it)
+            means.append(m); yerr[0].append(e[0][0]); yerr[1].append(e[1][0])
+        ax.bar(x + (j - 0.5) * w, means, w, yerr=yerr, capsize=3, label=label, color=color)
+    ax.set_xticks(x)
+    ax.set_xticklabels([("mask: " + n) if n != "union" else "mask: ALL (union)" for n in names],
+                       rotation=20, ha="right")
+    ax.set_ylim(0, 1.02); ax.set_ylabel("F1 (macro)")
+    ax.set_title("Masking one function-word category at a time (Hard-Mask)")
+    ax.legend(fontsize=9)
+    _save(fig, path)
+
+
 def fig_robustness(results, path):
     variants = _variants(results)
     if not variants:
@@ -423,6 +474,7 @@ ALL_FIGURES = [
     ("05_roc_pr", fig_roc_pr),
     ("06_ood_transfer", fig_ood_transfer),
     ("06b_cross_generator", fig_cross_generator),
+    ("06c_heldout_generator", fig_heldout_generator),
     ("07_robustness", fig_robustness),
     ("08_fw_attribution_mass", fig_fw_attribution_mass),
     ("08b_fw_identity_sensitivity", fig_fw_identity_sensitivity),

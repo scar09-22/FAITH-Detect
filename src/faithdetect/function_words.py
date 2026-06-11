@@ -40,41 +40,53 @@ FUNC_TOKEN = "[FUNC]"
 # document what "function word" means linguistically).
 CLOSED_CLASS_POS = ("DET", "ADP", "CCONJ", "SCONJ", "AUX", "PRON", "PART")
 
-# A curated, explicit closed-class English list. Kept separate so the set is auditable and
-# does not depend on any library being installed. Includes the canonical examples the
-# requirement calls out ("the", "a", "an") and the rest of the closed classes.
-CURATED_CLOSED_CLASS: frozenset[str] = frozenset(
-    {
-        # articles / determiners
+# A curated, explicit closed-class English vocabulary, organised by grammatical category so
+# that ablations can mask one category at a time ("cat:<name>" definitions below). Kept
+# explicit so the set is auditable and does not depend on any library being installed.
+# Categories form a partition (each word appears in exactly one category); their union is the
+# full curated closed-class set, which includes the canonical examples ("the", "a", "an").
+FW_CATEGORIES: dict[str, frozenset[str]] = {
+    "determiners": frozenset({
+        # articles, demonstratives, quantifier determiners
         "a", "an", "the", "this", "that", "these", "those", "such", "every", "each",
         "either", "neither", "another", "any", "some", "no", "all", "both", "half",
-        # personal / possessive / reflexive / relative / interrogative pronouns
+        "more", "most", "other",
+    }),
+    "pronouns": frozenset({
         "i", "me", "my", "mine", "myself", "we", "us", "our", "ours", "ourselves",
         "you", "your", "yours", "yourself", "yourselves", "he", "him", "his", "himself",
         "she", "her", "hers", "herself", "it", "its", "itself", "they", "them", "their",
         "theirs", "themselves", "who", "whom", "whose", "which", "what", "whatever",
         "whoever", "whomever", "whichever", "one", "ones", "oneself",
-        # prepositions
+    }),
+    "prepositions": frozenset({
         "of", "in", "on", "at", "by", "for", "with", "about", "against", "between",
         "into", "through", "during", "before", "after", "above", "below", "to", "from",
-        "up", "down", "over", "under", "again", "further", "then", "once", "out", "off",
+        "up", "down", "over", "under", "out", "off",
         "onto", "upon", "within", "without", "along", "across", "behind", "beyond",
         "near", "around", "among", "amongst", "toward", "towards", "via", "per",
-        # coordinating / subordinating conjunctions
+    }),
+    "conjunctions": frozenset({
         "and", "but", "or", "nor", "so", "yet", "because", "as", "until", "while",
         "although", "though", "since", "unless", "whereas", "whether", "if", "than",
         "albeit", "lest", "whilst",
-        # auxiliaries / modals / copula
+    }),
+    "auxiliaries": frozenset({
+        # modals, copula, and contraction remnants produced by tokenisation
         "be", "am", "is", "are", "was", "were", "been", "being", "have", "has", "had",
         "having", "do", "does", "did", "doing", "will", "would", "shall", "should",
         "can", "could", "may", "might", "must", "ought", "need", "dare",
-        # particles / negation / common adverbial function words
-        "not", "no", "nor", "too", "very", "just", "only", "also", "even", "still",
-        "there", "here", "when", "where", "why", "how", "all", "more", "most", "other",
-        "s", "t", "re", "ve", "ll", "d", "m", "o",  # contraction remnants
+        "s", "t", "re", "ve", "ll", "d", "m", "o",
         "n't", "'s", "'re", "'ve", "'ll", "'d", "'m",
-    }
-)
+    }),
+    "adverbial": frozenset({
+        # negation, degree, and other high-frequency adverbial function words
+        "not", "too", "very", "just", "only", "also", "even", "still",
+        "there", "here", "when", "where", "why", "how", "then", "once", "again", "further",
+    }),
+}
+
+CURATED_CLOSED_CLASS: frozenset[str] = frozenset().union(*FW_CATEGORIES.values())
 
 
 @dataclass(frozen=True)
@@ -128,7 +140,18 @@ def build_function_word_set(definition: str = "union") -> FunctionWordSet:
       * ``"union"``        -> curated + all stop-word lists (default; most comprehensive).
       * ``"pos"``          -> curated list treated as the POS proxy (closed-class surface
                               forms); used by the set-definition ablation.
+      * ``"cat:<name>"``   -> a single curated category (one of ``FW_CATEGORIES``:
+                              determiners, pronouns, prepositions, conjunctions,
+                              auxiliaries, adverbial). Used by the per-category masking
+                              ablation: mask ONLY that category, leave the rest intact.
     """
+    if definition.startswith("cat:"):
+        key = definition.split(":", 1)[1]
+        if key not in FW_CATEGORIES:
+            raise ValueError(f"Unknown function-word category {key!r}; "
+                             f"choose from {sorted(FW_CATEGORIES)}")
+        return FunctionWordSet(name=definition, words=FW_CATEGORIES[key],
+                               sources=(f"curated_{key}",))
     sources: list[str] = []
     words: set[str] = set()
     if definition in ("curated", "union", "pos"):

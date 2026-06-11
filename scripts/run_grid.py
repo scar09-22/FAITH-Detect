@@ -51,8 +51,13 @@ def build_cfg(args) -> ExperimentConfig:
         variants=tuple(args.variants), seeds=tuple(args.seeds), max_length=args.max_length,
         epochs=args.epochs, batch_size=args.batch_size, train_subsample=args.train_subsample,
         softreg_lambda=args.softreg_lambda, xai_method=args.xai_method,
+        fw_definition=args.fw_definition,
         faithfulness_n_texts=args.faithfulness_n_texts, ig_steps=args.ig_steps,
         ood_domains=tuple(args.ood_domains), device=args.device,
+        train_mix_parquet=args.train_mix_parquet,
+        train_mix_generators=tuple(args.train_mix_generators),
+        heldout_generators=tuple(args.heldout_generators),
+        measure_leakage=not args.no_leakage,
     )
 
 
@@ -76,6 +81,7 @@ def merge(cfg, cells, base, leak) -> dict:
             continue
         per_in = [c["indomain"] for c in cs]
         per_ood = [c["ood"] for c in cs if c.get("ood")]
+        per_ho = [c["heldout_gen"] for c in cs if c.get("heldout_gen")]
         attacks = list(cs[0].get("attacks", {}).keys())
         vres = {
             "indomain": {"per_seed": per_in, "aggregated": aggregate_seeds(per_in)},
@@ -88,6 +94,11 @@ def merge(cfg, cells, base, leak) -> dict:
         }
         if per_ood:
             vres["ood"] = {"per_seed": per_ood, "aggregated": aggregate_seeds(per_ood)}
+        if per_ho:
+            vres["heldout_gen"] = {"per_seed": per_ho, "aggregated": aggregate_seeds(per_ho)}
+            ref_ho = next((c for c in cs if c.get("heldout_per_generator")), None)
+            if ref_ho:
+                results.setdefault("heldout_per_generator", {})[v] = ref_ho["heldout_per_generator"]
         ref = next((c for c in cs if c["seed"] == seeds[0]), cs[0])
         results["ref_preds"][v] = {"indomain": ref.get("indomain_preds")}
         if ref.get("ood_preds"):
@@ -147,6 +158,16 @@ def main():
     ap.add_argument("--train_subsample", type=int, default=600)
     ap.add_argument("--softreg_lambda", type=float, default=0.5)
     ap.add_argument("--xai_method", default="ig")
+    ap.add_argument("--fw_definition", default="union",
+                    help="union | curated | stopwords | cat:<category> (per-category ablation)")
+    ap.add_argument("--train_mix_parquet", default=None,
+                    help="RAID reviews pool parquet for mixed-generator training")
+    ap.add_argument("--train_mix_generators", nargs="*", default=[],
+                    help="held-IN generators added to training")
+    ap.add_argument("--heldout_generators", nargs="*", default=[],
+                    help="held-OUT generators for same-domain cross-generator eval")
+    ap.add_argument("--no_leakage", action="store_true",
+                    help="skip the random-split leakage cell (saves one training run)")
     ap.add_argument("--faithfulness_n_texts", type=int, default=16)
     ap.add_argument("--ig_steps", type=int, default=16)
     ap.add_argument("--ood_domains", nargs="+", default=["abstracts"])
@@ -160,7 +181,8 @@ def main():
     args = ap.parse_args()
 
     cfg = build_cfg(args)
-    os.makedirs(CELL_DIR, exist_ok=True)
+    cell_dir = os.path.join(CELL_DIR, args.name)
+    os.makedirs(cell_dir, exist_ok=True)
 
     # Pre-build the RAID OOD cache once (so each cell just reads the parquet).
     if cfg.ood_cache:
@@ -171,7 +193,7 @@ def main():
         except Exception as e:
             print(f"[warn] OOD cache build failed: {type(e).__name__}: {str(e)[:100]}")
 
-    cfg_path = os.path.join(CELL_DIR, "cfg.json")
+    cfg_path = os.path.join(cell_dir, "cfg.json")
     save_json(cfg_path, asdict(cfg))
 
     env = dict(os.environ)
@@ -185,12 +207,12 @@ def main():
     for v in cfg.variants:
         for s in cfg.seeds:
             ref = (s == cfg.seeds[0])
-            out = os.path.join(CELL_DIR, f"{v}_s{s}.json")
+            out = os.path.join(cell_dir, f"{v}_s{s}.json")
             # Train+eval ALL cells on the train device (CPU is robust; no attribution here).
             # Ref-seed cells also save their weights so a separate XAI cell can attribute them.
             cell_args = ["--config_json", cfg_path, "--variant", v, "--seed", str(s),
                          "--xai", "0", "--device", train_dev, "--out", out]
-            model_path = os.path.join(CELL_DIR, f"{v}_s{s}_model.pt")
+            model_path = os.path.join(cell_dir, f"{v}_s{s}_model.pt")
             if ref:
                 cell_args += ["--model_out", model_path]
             print(f"== train cell {v} seed {s} (device={train_dev}{', +save' if ref else ''}) ==")
@@ -199,7 +221,7 @@ def main():
 
             # Attribute the ref-seed model on the XAI device (small footprint; fits MPS).
             if ref and res is not None and os.path.exists(model_path):
-                xout = os.path.join(CELL_DIR, f"{v}_xai.json")
+                xout = os.path.join(cell_dir, f"{v}_xai.json")
                 print(f"== xai cell {v} (device={xai_dev}, load {os.path.basename(model_path)}) ==")
                 xres = run_subproc(
                     ["--config_json", cfg_path, "--mode", "xai", "--variant", v,
@@ -214,11 +236,13 @@ def main():
                     print(f"   [warn] XAI never succeeded for {v}; metrics kept, XAI figures skipped")
 
     base = run_subproc(["--config_json", cfg_path, "--kind", "tfidf", "--device", train_dev,
-                        "--out", os.path.join(CELL_DIR, "tfidf.json")],
-                       os.path.join(CELL_DIR, "tfidf.json"), retries=args.retries, env=env)
-    leak = run_subproc(["--config_json", cfg_path, "--kind", "leakage_random", "--device", train_dev,
-                        "--out", os.path.join(CELL_DIR, "leak.json")],
-                       os.path.join(CELL_DIR, "leak.json"), retries=args.retries, env=env)
+                        "--out", os.path.join(cell_dir, "tfidf.json")],
+                       os.path.join(cell_dir, "tfidf.json"), retries=args.retries, env=env)
+    leak = None
+    if cfg.measure_leakage:
+        leak = run_subproc(["--config_json", cfg_path, "--kind", "leakage_random", "--device", train_dev,
+                            "--out", os.path.join(cell_dir, "leak.json")],
+                           os.path.join(cell_dir, "leak.json"), retries=args.retries, env=env)
 
     results = merge(cfg, cells, base, leak)
     save_json(args.out, results)

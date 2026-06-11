@@ -1,0 +1,146 @@
+{
+  "meta": {
+    "args": {
+      "data_csv": "data/all_data.csv",
+      "model_name": "gpt2",
+      "device": "cpu",
+      "seed": 0,
+      "max_train": 400,
+      "max_test": null,
+      "attack_rate": 0.5,
+      "ood_parquet": "results/cache/raid_reviews_pool.parquet",
+      "max_ood": 600,
+      "out": "results/zeroshot.json"
+    },
+    "env": {
+      "python": "3.13.7",
+      "platform": "macOS-15.1-arm64-arm-64bit-Mach-O",
+      "timestamp_utc": "2026-06-11T08:56:37.143681+00:00",
+      "torch": "2.9.0",
+      "cuda": false,
+      "mps": true
+    },
+    "methods": [
+      "loglik",
+      "logrank",
+      "entropy",
+      "fast_detectgpt"
+    ]
+  },
+  "indomain": {
+    "loglik": {
+      "metrics": {
+        "accuracy": 0.7425,
+        "f1_macro": 0.7422277280377398,
+        "f1_binary": 0.7506053268765133,
+        "precision": 0.7276995305164319,
+        "recall": 0.775,
+        "roc_auc": 0.81265,
+        "pr_auc": 0.8202043524090086,
+        "ece": 0.2500049018912582
+      },
+      "threshold": -3.972945213317871,
+      "auroc": 0.81265
+    },
+    "logrank": {
+      "metrics": {
+        "accuracy": 0.7175,
+        "f1_macro": 0.7174982343639648,
+        "f1_binary": 0.7167919799498746,
+        "precision": 0.7185929648241206,
+        "recall": 0.715,
+        "roc_auc": 0.79365,
+        "pr_auc": 0.7984747031810163,
+        "ece": 0.2658236672967573
+      },
+      "threshold": -2.128999710083008,
+      "auroc": 0.79365
+    },
+    "entropy": {
+      "metrics": {
+        "accuracy": 0.7,
+        "f1_macro": 0.699932484809082,
+        "f1_binary": 0.6954314720812182,
+        "precision": 0.7061855670103093,
+        "recall": 0.685,
+        "roc_auc": 0.7465250000000001,
+        "pr_auc": 0.7169248213775049,
+        "ece": 0.13160519765290177
+      },
+      "threshold": -4.1231958866119385,
+      "auroc": 0.7465250000000001
+    },
+    "fast_detectgpt": {
+      "metrics": {
+        "accuracy": 0.7125,
+        "f1_macro": 0.7115462999542237,
+        "f1_binary": 0.6949602122015915,
+        "precision": 0.7401129943502824,
+        "recall": 0.655,
+        "roc_auc": 0.7953250000000001,
+        "pr_auc": 0.7866585593700661,
+        "ece": 0.06568070471599802
+      },
+      "threshold": 0.9412267208099365,
+      "auroc": 0.7953250000000001
+    }
+  },
+  "fw_attack": {
+    "loglik": {
+      "metrics": {
+        "accuracy": 0.51,
+        "f1_macro": 0.3551783129359126,
+        "f1_binary": 0.0392156862745098,
+        "precision": 1.0,
+        "recall": 0.02,
+        "roc_auc": 0.7812000000000001,
+        "pr_auc": 0.7662973398208673,
+        "ece": 0.2410166107535845
+      },
+      "threshold": -3.972945213317871,
+      "auroc": 0.7812000000000001
+    },
+    "logrank": {
+      "metrics": {
+        "accuracy": 0.5025,
+        "f1_macro": 0.33886494073871043,
+        "f1_binary": 0.009950248756218905,
+        "precision": 1.0,
+        "recall": 0.005,
+        "roc_auc": 0.7707,
+        "pr_auc": 0.7469346215904528,
+        "ece": 0.2633169936938492
+      },
+      "threshold": -2.128999710083008,
+      "auroc": 0.7707
+    },
+    "entropy": {
+      "metrics": {
+        "accuracy": 0.5325,
+        "f1_macro": 0.40874706547256756,
+        "f1_binary": 0.1382488479262673,
+        "precision": 0.8823529411764706,
+        "recall": 0.075,
+        "roc_auc": 0.78525,
+        "pr_auc": 0.7616405824146572,
+        "ece": 0.045277071724313896
+      },
+      "threshold": -4.1231958866119385,
+      "auroc": 0.78525
+    },
+    "fast_detectgpt": {
+      "metrics": {
+        "accuracy": 0.4975,
+        "f1_macro": 0.332220367278798,
+        "f1_binary": 0.0,
+        "precision": 0.0,
+        "recall": 0.0,
+        "roc_auc": 0.559175,
+        "pr_auc": 0.530784119267125,
+        "ece": 0.1337709674782068
+      },
+      "threshold": 0.9412267208099365,
+      "auroc": 0.559175
+    }
+  }
+}
