@@ -94,9 +94,17 @@ def split_rows(df: pd.DataFrame, seed: int, train_n: int | None) -> SplitBundle:
     Row-level (not grouped) by necessity — see module docstring. The split depends only on
     ``seed``, so all variants at the same seed see identical train/val/test rows.
     """
-    trainval, test = train_test_split(
-        df, test_size=0.2, random_state=seed, stratify=df["label"]
-    )
+    if "qid" in df.columns and df["qid"].notna().all():
+        # GROUP split by question: multiple answers to one question must never straddle
+        # train/test (the row-level split leaked question context and inflated scores).
+        from sklearn.model_selection import GroupShuffleSplit
+        gss = GroupShuffleSplit(n_splits=1, test_size=0.2, random_state=seed)
+        tv_idx, te_idx = next(gss.split(df, groups=df["qid"]))
+        trainval, test = df.iloc[tv_idx], df.iloc[te_idx]
+    else:
+        trainval, test = train_test_split(
+            df, test_size=0.2, random_state=seed, stratify=df["label"]
+        )
     train, val = train_test_split(  # 0.25 of the remaining 80% -> 20% of the whole
         trainval, test_size=0.25, random_state=seed, stratify=trainval["label"]
     )

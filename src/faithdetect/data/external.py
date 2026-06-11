@@ -61,15 +61,17 @@ def _clean(text: object) -> str:
 
 def _maybe_add(
     bucket: list[str], text: object, cap: int, min_words: int, seen: set[str]
-) -> None:
-    """Append a cleaned, deduplicated, long-enough text to ``bucket`` (up to ``cap``)."""
+) -> bool:
+    """Append a cleaned, deduplicated, long-enough text to ``bucket`` (up to ``cap``).
+    Returns True iff the text was appended (callers track per-row metadata, e.g. qids)."""
     if len(bucket) >= cap:
-        return
+        return False
     t = _clean(text)
     if len(t.split()) < min_words or t in seen:
-        return
+        return False
     seen.add(t)
     bucket.append(t)
+    return True
 
 
 def _finalise(
@@ -137,15 +139,21 @@ def load_hc3(
     cached = _read_cache(cache_path)
     if cached is not None:
         return cached
+    # Rows carry a question id (qid) so downstream splits can be GROUPED BY QUESTION:
+    # multiple answers to one question must never straddle a train/test boundary.
     human: list[str] = []
     ai: list[str] = []
+    human_qid: list[int] = []
+    ai_qid: list[int] = []
     seen: set[str] = set()
     try:
-        for ex in _hc3_examples():
+        for qid, ex in enumerate(_hc3_examples()):
             for ans in ex.get("human_answers") or []:
-                _maybe_add(human, ans, cap_per_class, min_words, seen)
+                if _maybe_add(human, ans, cap_per_class, min_words, seen):
+                    human_qid.append(qid)
             for ans in ex.get("chatgpt_answers") or []:
-                _maybe_add(ai, ans, cap_per_class, min_words, seen)
+                if _maybe_add(ai, ans, cap_per_class, min_words, seen):
+                    ai_qid.append(qid)
             if len(human) >= cap_per_class and len(ai) >= cap_per_class:
                 break
     except Exception as e:
@@ -154,6 +162,8 @@ def load_hc3(
             "Check network access and that the dataset is still hosted on the Hub."
         ) from e
     df = _finalise(human, ai, cap_per_class, seed, source="HC3")
+    qid_map = {t: q for t, q in zip(human + ai, human_qid + ai_qid)}
+    df["qid"] = df["text"].map(qid_map)
     _write_cache(df, cache_path)
     return df
 

@@ -576,22 +576,33 @@ def build(r, figdir, out, extras_dir="results", extras_figdir="figures"):
                   r"zero-shot transferred to MAiDE-up."]
             table(L, ["Variant", "HC3 in-domain F1", "FW-attack F1", r"$\rightarrow$MAiDE F1"],
                   rows, "Replication on HC3 (mean $\\pm$ 95\\% CI over seeds; \\% units).", "hc3")
-            L += [r"HC3 is near-ceiling for both variants (ChatGPT-era answers are stylistically "
-                  r"blatant), so in-domain parity replicates trivially. The informative result is "
-                  r"transfer: here Hard-Mask transfers \emph{better} than the baseline --- the "
-                  r"opposite direction from the hotel$\rightarrow$movie result --- indicating the "
-                  r"sign of the invariance--transfer effect is corpus-dependent rather than a "
-                  r"universal penalty. We report both directions and claim only the trade-off's "
-                  r"existence, not its sign.",]
+            L += [r"\paragraph{Why HC3 reaches ceiling.} Both variants reach (near-)perfect "
+                  r"in-corpus F1, which we examined rather than celebrated. Three factors "
+                  r"contribute. (i) HC3's ChatGPT-era answers carry blatant register markers "
+                  r"(uniform length, hedging boilerplate, list-like structure) that its own "
+                  r"release paper documents as highly separable. (ii) Our splits are grouped by "
+                  r"\emph{question}: HC3 contains several answers per question, and a naive "
+                  r"row-level split would leak question context across train/test --- we found and "
+                  r"removed exactly this hazard (answers to one question never straddle the "
+                  r"boundary), and the ceiling persists, so it is a property of the corpus, not "
+                  r"leakage. (iii) The classifier is fine-tuned on in-corpus data; ceiling "
+                  r"separability under fine-tuning is consistent with prior HC3 results. "
+                  r"Consequently the in-corpus and attack rows certify little beyond corpus "
+                  r"easiness; the informative result is transfer: Hard-Mask transfers "
+                  r"\emph{better} than the baseline here --- the opposite direction from the "
+                  r"hotel$\rightarrow$movie result --- indicating the sign of the "
+                  r"invariance--transfer effect is corpus-dependent rather than a universal "
+                  r"penalty. We claim only the trade-off's existence, not its sign.",]
 
     # 5.4h modern open-weight generators (optional: results/new_generators.json)
     if newgen:
         L += [r"\subsection{Modern open-weight generators}",
               r"We generate fresh same-domain hotel reviews with locally run open-weight LLMs "
-              r"(Llama-3.2-3B, Gemma-2-2B; prompted with real hotel names and cities) and "
-              r"evaluate the trained detectors per generator "
-              r"(Figure~\ref{fig:18_new_generators}). Closed API models (GPT-4o, Claude, "
-              r"Gemini) are out of scope locally and remain future work.",]
+              r"(Llama-3.2-3B, Gemma-2-2B) and with Claude (Haiku/Sonnet tiers via its CLI), all "
+              r"prompted with real hotel names and cities, and evaluate the trained detectors "
+              r"per generator "
+              r"(Figure~\ref{fig:18_new_generators}). GPT-4o and Gemini require API access we do not "
+              r"have and remain future work.",]
         figure(L, "18_new_generators.png",
                "Detection of freshly generated Llama-3.2 / Gemma-2 hotel reviews by variant.", 0.9)
 
