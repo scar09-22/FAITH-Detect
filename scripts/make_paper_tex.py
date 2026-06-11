@@ -102,7 +102,7 @@ def build(r, figdir, out, extras_dir="results", extras_figdir="figures"):
     L += [
         r"\documentclass[11pt]{article}",
         r"\usepackage[margin=1in]{geometry}",
-        r"\usepackage{graphicx,booktabs,amsmath,amssymb,float,caption,hyperref,times}",
+        r"\usepackage{graphicx,booktabs,amsmath,amssymb,float,caption,times}",
         r"\usepackage[hidelinks]{hyperref}",
         r"\graphicspath{{figures/}{results_colab/figures/}}",
         r"\title{\textbf{Should a Detector Ignore Function Words? Characterising the"
