@@ -46,6 +46,47 @@ def function_word_attack(text: str, fw_set: FunctionWordSet, rate: float = 0.5, 
     return " ".join(out) if out else text
 
 
+def _fw_single_op(text: str, fw_set: FunctionWordSet, op: str, rate: float, seed: int) -> str:
+    """Apply ONE function-word operation (delete | duplicate | swap) to a fraction `rate`.
+
+    Splitting the combined `function_word_attack` lets us separate the perturbation a
+    hard-masked model is *provably* invariant to (swap = function-word identity change,
+    which collapses to the same [FUNC] placeholder at the same position) from those it is
+    NOT invariant to (delete / duplicate, which change [FUNC] positions and counts).
+    """
+    rng = random.Random(seed)
+    words = text.split()
+    out: list[str] = []
+    for w in words:
+        is_fw = _normalize_surface(w) in fw_set.words
+        if is_fw and rng.random() < rate:
+            if op == "delete":
+                continue
+            if op == "duplicate":
+                out.extend([w, w])
+                continue
+            if op == "swap":
+                out.append(rng.choice(_FW_SWAP_POOL))
+                continue
+        out.append(w)
+    return " ".join(out) if out else text
+
+
+def fw_swap_attack(text, fw_set, rate=0.5, seed=0):
+    """Replace function words with other function words (identity-only; positions/counts kept)."""
+    return _fw_single_op(text, fw_set, "swap", rate, seed)
+
+
+def fw_delete_attack(text, fw_set, rate=0.5, seed=0):
+    """Delete function words (changes token positions and counts)."""
+    return _fw_single_op(text, fw_set, "delete", rate, seed)
+
+
+def fw_duplicate_attack(text, fw_set, rate=0.5, seed=0):
+    """Duplicate function words (changes token positions and counts)."""
+    return _fw_single_op(text, fw_set, "duplicate", rate, seed)
+
+
 def _wordnet_synonym(word: str, rng: random.Random) -> str | None:
     try:
         from nltk.corpus import wordnet as wn
@@ -94,7 +135,10 @@ def whitespace_attack(text: str, fw_set: FunctionWordSet, rate: float = 0.2, see
 
 
 ATTACKS = {
-    "function_word": function_word_attack,
+    "function_word": function_word_attack,   # mixed: delete/duplicate/swap
+    "fw_swap": fw_swap_attack,                # identity-only (proof covers this)
+    "fw_delete": fw_delete_attack,
+    "fw_duplicate": fw_duplicate_attack,
     "synonym": synonym_attack,
     "whitespace": whitespace_attack,
 }

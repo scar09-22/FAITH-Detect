@@ -1,0 +1,70 @@
+{
+  "meta": {
+    "encoder": "distilroberta-base",
+    "train_subsample": 600,
+    "epochs": 3,
+    "seeds": [
+      0
+    ],
+    "ood": "RAID local cache (240 rows)",
+    "note": "PILOT. baseline=identity+slots+content; hardmask=identity removed slot kept; deletion=identity+slot removed; random=identity removed, consistent slot-marker removed."
+  },
+  "variants": {
+    "baseline": {
+      "indomain_f1": {
+        "mean": 93.7386905097332,
+        "lo": 93.7386905097332,
+        "hi": 93.7386905097332,
+        "n": 1
+      },
+      "ood_f1": {
+        "mean": 50.327236113441856,
+        "lo": 50.327236113441856,
+        "hi": 50.327236113441856,
+        "n": 1
+      }
+    },
+    "hardmask": {
+      "indomain_f1": {
+        "mean": 89.2078431372549,
+        "lo": 89.2078431372549,
+        "hi": 89.2078431372549,
+        "n": 1
+      },
+      "ood_f1": {
+        "mean": 37.00270691493724,
+        "lo": 37.00270691493724,
+        "hi": 37.00270691493724,
+        "n": 1
+      }
+    },
+    "deletion": {
+      "indomain_f1": {
+        "mean": 93.99624765478424,
+        "lo": 93.99624765478424,
+        "hi": 93.99624765478424,
+        "n": 1
+      },
+      "ood_f1": {
+        "mean": 33.33333333333333,
+        "lo": 33.33333333333333,
+        "hi": 33.33333333333333,
+        "n": 1
+      }
+    },
+    "random": {
+      "indomain_f1": {
+        "mean": 91.2156862745098,
+        "lo": 91.2156862745098,
+        "hi": 91.2156862745098,
+        "n": 1
+      },
+      "ood_f1": {
+        "mean": 38.81318681318682,
+        "lo": 38.81318681318682,
+        "hi": 38.81318681318682,
+        "n": 1
+      }
+    }
+  }
+}

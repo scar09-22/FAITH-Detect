@@ -26,7 +26,7 @@ from transformers import AutoModel, AutoTokenizer
 
 from .function_words import add_func_token
 
-VARIANTS = ("baseline", "hardmask", "softreg")
+VARIANTS = ("baseline", "hardmask", "softreg", "deletion", "random")
 
 
 @dataclass

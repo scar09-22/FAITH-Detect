@@ -1,0 +1,32 @@
+{
+  "meta": {
+    "seed": 0,
+    "encoder": "distilroberta-base",
+    "n_texts": 50,
+    "ig_steps": 24,
+    "note": "PILOT distilroberta-base seed 0. IG uses a pad baseline incl. [FUNC] so placeholder-slot attribution is actually measured; occlusion is forward-only. Mass = share of |attribution| on FW/[FUNC] positions."
+  },
+  "variants": {
+    "baseline": {
+      "ig_fw_position_mass_mean": 0.35405388474464417,
+      "ig_fw_position_mass_sd": 0.11142457276582718,
+      "occlusion_fw_mass_mean": 0.37590642436832483,
+      "occlusion_fw_mass_sd": 0.1369401547227027,
+      "n": 50
+    },
+    "softreg": {
+      "ig_fw_position_mass_mean": 0.243133082985878,
+      "ig_fw_position_mass_sd": 0.09610138833522797,
+      "occlusion_fw_mass_mean": 0.39059615308814016,
+      "occlusion_fw_mass_sd": 0.12748477904467723,
+      "n": 50
+    },
+    "hardmask": {
+      "ig_fw_position_mass_mean": 0.18196231126785278,
+      "ig_fw_position_mass_sd": 0.06166753172874451,
+      "occlusion_fw_mass_mean": 0.3485186582231059,
+      "occlusion_fw_mass_sd": 0.10755724285619997,
+      "n": 50
+    }
+  }
+}

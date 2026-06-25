@@ -35,7 +35,11 @@ def make_collator(
     func_id: int,
     fw_set: FunctionWordSet,
 ) -> Collator:
-    """Collator consistent with the variant (hard masking iff variant == 'hardmask')."""
+    """Collator consistent with the variant. baseline/softreg -> no masking; hardmask ->
+    [FUNC] placeholder; deletion -> drop FW tokens; random -> random-token placeholder."""
+    mode = {"hardmask": "hardmask", "deletion": "deletion", "random": "random"}.get(
+        model_cfg.variant, "none"
+    )
     return Collator(
         tokenizer=tokenizer,
         fw_set=fw_set,
@@ -43,6 +47,7 @@ def make_collator(
         hard_mask=(model_cfg.variant == "hardmask"),
         placeholder_id=func_id,
         padding=True,
+        mask_mode=mode,
     )
 
 
